@@ -1,0 +1,75 @@
+group = 'com.haulmont.thirdparty'
+version = '2.6.0.cuba1'
+
+apply plugin: 'maven'
+
+ant.importBuild('antbuild.xml') { antTargetName ->
+    'ant-' + antTargetName
+}
+
+task unpackManifest(type: Copy, dependsOn: 'ant-package-src-jar') {
+    from zipTree('eclipselink-src.zip')
+    into 'build/tmp/manifest'
+    include 'META-INF/MANIFEST.MF'
+}
+
+task buildSourceJar(type: Jar, dependsOn: unpackManifest) {
+    from zipTree('eclipselink-src.zip')
+    destinationDir = file('build/libs')
+    baseName = 'eclipselink'    
+    classifier = 'sources'
+    manifest {
+        from 'build/tmp/manifest/META-INF/MANIFEST.MF'
+    }
+}
+
+task buildJar(type: Jar, dependsOn: unpackManifest) {
+    from zipTree('eclipselink.jar')
+    destinationDir = file('build/libs')
+    baseName = 'eclipselink'    
+    manifest {
+        from 'build/tmp/manifest/META-INF/MANIFEST.MF'
+    }
+}
+
+artifacts {
+    archives buildJar 
+    archives buildSourceJar
+}
+
+def repositoryUrl = 'http://repository.haulmont.com:8587/nexus/content'
+def repositoryUser = System.getenv('HAULMONT_REPOSITORY_USER')
+def repositoryPassword = System.getenv('HAULMONT_REPOSITORY_PASSWORD')
+
+def uploadUrl = project.hasProperty('uploadUrl') ? project.uploadUrl : "${repositoryUrl}/repositories/thirdparty"
+def uploadUser = project.hasProperty('uploadUser') ? project.uploadUser : repositoryUser
+def uploadPassword = project.hasProperty('uploadPassword') ? project.uploadPassword : repositoryPassword
+
+configurations {
+    deployerJars
+}
+
+dependencies {
+    deployerJars(group: 'org.apache.maven.wagon', name: 'wagon-http', version: '1.0-beta-2')
+}
+
+repositories {
+    mavenLocal()
+    maven {
+        credentials {
+            username repositoryUser
+            password repositoryPassword
+        }
+        url "${repositoryUrl}/groups/work"
+    }
+}
+
+uploadArchives.configure {
+    repositories.mavenDeployer {
+        name = 'httpDeployer'
+        configuration = configurations.deployerJars
+        repository(url: uploadUrl) {
+            authentication(userName: uploadUser, password: uploadPassword)
+        }
+    }
+}
