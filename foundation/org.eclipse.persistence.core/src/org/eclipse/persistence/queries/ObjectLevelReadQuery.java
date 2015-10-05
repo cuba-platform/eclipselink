@@ -1771,7 +1771,7 @@ public abstract class ObjectLevelReadQuery extends ObjectBuildingQuery {
             if(executionFetchGroup != null) {
                 String nestedAttributeName = ((QueryKeyExpression)expression).getNestedAttributeName();
                 if(nestedAttributeName != null) {
-                    if(!executionFetchGroup.containsAttributeInternal(nestedAttributeName)) {
+                    if(!executionFetchGroup.containsAttribute(nestedAttributeName)) { // cuba
                         getSession().log(SessionLog.WARNING, SessionLog.QUERY, "query_has_joined_attribute_outside_fetch_group", new Object[]{toString(), nestedAttributeName});
                     }
                 }

@@ -1,7 +1,8 @@
 group = 'com.haulmont.thirdparty'
-version = '2.6.0.cuba1'
+version = '2.6.0.cuba2'
 
 apply plugin: 'maven'
+apply plugin: 'maven-publish'
 
 ant.importBuild('antbuild.xml') { antTargetName ->
     'ant-' + antTargetName
@@ -70,6 +71,19 @@ uploadArchives.configure {
         configuration = configurations.deployerJars
         repository(url: uploadUrl) {
             authentication(userName: uploadUser, password: uploadPassword)
+        }
+    }
+}
+
+// install to the local Maven repo
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifact buildJar 
+            
+            artifact buildSourceJar {
+                classifier "sources"
+            }
         }
     }
 }
