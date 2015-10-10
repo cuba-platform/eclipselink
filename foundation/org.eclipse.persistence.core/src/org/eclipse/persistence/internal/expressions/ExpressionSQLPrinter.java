@@ -101,7 +101,8 @@ public class ExpressionSQLPrinter {
         return this.platform;
     }
 
-    protected AbstractSession getSession() {
+    // cuba: made public
+    public AbstractSession getSession() {
         return session;
     }
 
