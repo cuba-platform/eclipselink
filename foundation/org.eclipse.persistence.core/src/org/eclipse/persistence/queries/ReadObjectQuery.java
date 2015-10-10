@@ -297,6 +297,12 @@ public class ReadObjectQuery extends ObjectLevelReadQuery {
      * null means there is none.
      */
     protected DatabaseQuery checkForCustomQuery(AbstractSession session, AbstractRecord translationRow) {
+        // begin cuba
+        if (Boolean.TRUE.equals(session.getProperty("cuba.disableSoftDelete"))) {
+            return null;
+        }
+        // end cuba
+
         Boolean useCustomQuery = this.isCustomQueryUsed != null ? this.isCustomQueryUsed.booleanValue() : Boolean.FALSE;
 
         checkDescriptor(session);
