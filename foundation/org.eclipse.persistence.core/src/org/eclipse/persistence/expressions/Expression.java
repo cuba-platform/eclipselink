@@ -4719,6 +4719,10 @@ public abstract class Expression implements Serializable, Cloneable {
         printer.printString(field.getNameDelimited(printer.getPlatform()));
 
         //bug6070214: unique field aliases need to be generated when required.
+        addFieldAliasIfNeeded(printer, field, statement);
+    }
+
+    protected void addFieldAliasIfNeeded(ExpressionSQLPrinter printer, DatabaseField field, SQLSelectStatement statement) {
         if (statement.getUseUniqueFieldAliases()){
             printer.printString(" AS " + statement.generatedAlias(field.getNameDelimited(printer.getPlatform())));
         }
