@@ -381,10 +381,11 @@ public class FieldExpression extends DataExpression {
                 printer.setIsFirstElementPrinted(true);
             }
             printSQL(printer);
+
+            addFieldAliasIfNeeded(printer, field, statement);
         } else {
             super.writeField(printer, field, statement);
         }
-
     }
 
     /**
