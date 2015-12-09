@@ -562,6 +562,11 @@ public class ReadObjectQuery extends ObjectLevelReadQuery {
 
             this.executionTime = System.currentTimeMillis();
             if (row != null) {
+                // cuba begin
+                if ((this.batchFetchPolicy != null) && this.batchFetchPolicy.isIN()) {
+                    this.batchFetchPolicy.addDataResults(row);
+                }
+                // cuba end
                 if (session.isUnitOfWork()) {
                     result = registerResultInUnitOfWork(row, (UnitOfWorkImpl)session, this.translationRow, true);
                 } else {
