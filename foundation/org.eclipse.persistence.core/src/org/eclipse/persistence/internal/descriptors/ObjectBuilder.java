@@ -44,6 +44,7 @@ import org.eclipse.persistence.internal.core.descriptors.CoreObjectBuilder;
 import org.eclipse.persistence.internal.databaseaccess.DatabaseAccessor;
 import org.eclipse.persistence.internal.databaseaccess.DatabasePlatform;
 import org.eclipse.persistence.internal.databaseaccess.Platform;
+import org.eclipse.persistence.internal.descriptors.changetracking.AttributeChangeListener;
 import org.eclipse.persistence.internal.expressions.*;
 import org.eclipse.persistence.internal.helper.*;
 import org.eclipse.persistence.internal.identitymaps.*;
@@ -2149,6 +2150,17 @@ public class ObjectBuilder extends CoreObjectBuilder<AbstractRecord, AbstractSes
             if (wasAClone && fetchGroupManager != null && (fetchGroupManager.isPartialObject(workingClone) && (!fetchGroupManager.isObjectValidForFetchGroup(workingClone, fetchGroupManager.getEntityFetchGroup(fetchGroup))))) {
                 isARefresh = true;
             }
+            // cuba begin
+            if (isARefresh
+                    && workingClone instanceof ChangeTracker
+                    && ((ChangeTracker) workingClone)._persistence_getPropertyChangeListener() instanceof AttributeChangeListener) {
+                ObjectChangeSet objectChanges =
+                        ((AttributeChangeListener)((ChangeTracker) workingClone)._persistence_getPropertyChangeListener()).getObjectChangeSet();
+                if (objectChanges != null && objectChanges.hasChanges()) {
+                    throw new IllegalStateException("Object '" + workingClone + "' containing in the persistence context has changes and cannot be reloaded");
+                }
+            }
+            // cub end
             if (wasAClone && (!isARefresh)) {
                 return workingClone;
             }
