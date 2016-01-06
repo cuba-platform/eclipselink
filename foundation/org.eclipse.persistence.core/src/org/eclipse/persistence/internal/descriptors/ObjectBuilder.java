@@ -2157,7 +2157,7 @@ public class ObjectBuilder extends CoreObjectBuilder<AbstractRecord, AbstractSes
                 ObjectChangeSet objectChanges =
                         ((AttributeChangeListener)((ChangeTracker) workingClone)._persistence_getPropertyChangeListener()).getObjectChangeSet();
                 if (objectChanges != null && objectChanges.hasChanges()) {
-                    throw new IllegalStateException("Object '" + workingClone + "' containing in the persistence context has changes and cannot be reloaded");
+                    throw new IllegalStateException("Object '" + workingClone + "' contained in the persistence context has changes and cannot be reloaded");
                 }
             }
             // cub end
