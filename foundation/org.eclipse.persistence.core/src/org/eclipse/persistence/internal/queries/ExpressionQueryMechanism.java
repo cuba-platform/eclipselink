@@ -23,6 +23,9 @@
 package org.eclipse.persistence.internal.queries;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.eclipse.persistence.internal.databaseaccess.DatasourceCall;
 import org.eclipse.persistence.internal.databaseaccess.DatasourcePlatform;
 import org.eclipse.persistence.internal.descriptors.OptimisticLockingPolicy;
@@ -2860,4 +2863,32 @@ public class ExpressionQueryMechanism extends StatementQueryMechanism {
         }
         return desc;
     }
+
+    // cuba begin
+    protected static final Pattern INSERT_PATTERN = Pattern.compile("INSERT.+?INTO (.+?) \\(.+");
+
+    @Override
+    protected Object executeCall(DatasourceCall databaseCall) throws DatabaseException {
+        AbstractSession sessionToUse = this.query.getExecutionSession();
+        boolean doNotUseCachedInserts =
+                Boolean.valueOf(String.valueOf(sessionToUse.getProperty("cuba.doNotUseCachedInserts")));
+        String cachedQuery = databaseCall.getQueryString();
+        if (doNotUseCachedInserts && cachedQuery != null && cachedQuery.startsWith("INSERT")) {
+            Matcher matcher = INSERT_PATTERN.matcher(cachedQuery);
+            if (matcher.find()) {
+                String tableName = matcher.group(1);
+                DatabaseTable targetTable = getDescriptor().getTable(tableName);
+                SQLInsertStatement sqlInsertStatement = this.buildInsertStatement(targetTable);
+                DatasourceCall call = getDescriptor().buildCallFromStatement(sqlInsertStatement, getQuery(), getExecutionSession());
+                call.setQuery(this.query);
+                call.prepare(sessionToUse);
+                call.translate(this.query.getTranslationRow(), getModifyRow(), sessionToUse);
+
+                return sessionToUse.executeCall(call, this.query.getTranslationRow(), this.query);
+            }
+        }
+
+        return super.executeCall(databaseCall);
+    }
+    // cuba end
 }
