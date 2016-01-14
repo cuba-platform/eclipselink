@@ -1296,6 +1296,12 @@ public abstract class AbstractDirectMapping extends AbstractColumnMapping implem
             row.setNullValueInFields(true);
         }
 
+        // cuba begin: we do not want to put NULL values to insert scripts
+        if (fieldValue == null && writeType == WriteType.INSERT) {
+            return;
+        }
+        // cuba end
+
         writeValueIntoRow(row, getField(), fieldValue);
     }
 
