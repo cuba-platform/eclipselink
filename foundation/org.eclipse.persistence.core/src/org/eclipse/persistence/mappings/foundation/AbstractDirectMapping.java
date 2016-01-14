@@ -1296,6 +1296,11 @@ public abstract class AbstractDirectMapping extends AbstractColumnMapping implem
             row.setNullValueInFields(true);
         }
 
+        //we do not want to put NULL values to insert scripts
+        if (fieldValue == null && writeType == WriteType.INSERT) {
+            return;
+        }
+
         writeValueIntoRow(row, getField(), fieldValue);
     }
     
