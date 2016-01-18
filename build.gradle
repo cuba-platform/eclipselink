@@ -1,5 +1,5 @@
 group = 'com.haulmont.thirdparty'
-version = '2.6.1.cuba4'
+version = '2.6.1.cuba6'
 
 apply plugin: 'maven'
 apply plugin: 'maven-publish'
