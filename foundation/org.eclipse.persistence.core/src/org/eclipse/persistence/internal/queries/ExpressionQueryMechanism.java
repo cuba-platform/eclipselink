@@ -1223,7 +1223,9 @@ public class ExpressionQueryMechanism extends StatementQueryMechanism {
             }
 
             SQLSelectStatement selectStatementForExist = createSQLSelectStatementForModifyAll(whereClause);
-
+            // cuba: needed for comparing attributes to null
+            selectStatementForExist.setTranslationRow(getQuery().getTranslationRow());
+            // cuba end
             // Main Case: Descriptor is mapped to more than one table and/or the query references other tables
             boolean isMainCase = selectStatementForExist.requiresAliases();
             if (isMainCase) {
@@ -1989,7 +1991,9 @@ public class ExpressionQueryMechanism extends StatementQueryMechanism {
 
         SQLCall selectCallForExist = null;
         SQLSelectStatement selectStatementForExist = createSQLSelectStatementForModifyAll(getSelectionCriteria());
-
+        // cuba: needed for comparing attributes to null
+        selectStatementForExist.setTranslationRow(getQuery().getTranslationRow());
+        // cuba end
         // Main Case: Descriptor is mapped to more than one table and/or the query references other tables
         boolean isMainCase = selectStatementForExist.requiresAliases();
         if(isMainCase) {
