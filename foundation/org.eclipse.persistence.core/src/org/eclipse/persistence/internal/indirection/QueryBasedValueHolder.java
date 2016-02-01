@@ -126,6 +126,13 @@ public class QueryBasedValueHolder extends DatabaseValueHolder {
         if (this.query.isObjectBuildingQuery() && ((ObjectBuildingQuery)this.query).shouldRefreshIdentityMapResult()){
             this.refreshCascade = ((ObjectBuildingQuery)this.query).getCascadePolicy();
         }
+        // cuba begin
+        if (Boolean.TRUE.equals(session.getProperty("cuba.disableSoftDelete"))) {
+            ReadQuery query = (ReadQuery) getQuery().clone();
+            query.setIsPrepared(false);
+            return session.executeQuery(query, getRow());
+        }
+        // cuba end
         return session.executeQuery(getQuery(), getRow());
     }
 
