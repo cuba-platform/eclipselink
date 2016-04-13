@@ -19,6 +19,7 @@ import java.rmi.server.ObjID;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.exceptions.ValidationException;
 import org.eclipse.persistence.indirection.*;
+import org.eclipse.persistence.internal.localization.ExceptionLocalization;
 import org.eclipse.persistence.mappings.*;
 import org.eclipse.persistence.internal.sessions.remote.RemoteValueHolder;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
@@ -321,4 +322,9 @@ public abstract class UnitOfWorkValueHolder extends DatabaseValueHolder implemen
         return ((WeavedAttributeValueHolderInterface)this.wrappedValueHolder).shouldAllowInstantiationDeferral();
     }
 
+    protected void throwUnfetchedAttributeException() {
+        throw new IllegalStateException(
+                ExceptionLocalization.buildMessage("cannot_get_unfetched_attribute",
+                        new Object[]{relationshipSourceObject, sourceAttributeName}));
+    }
 }
