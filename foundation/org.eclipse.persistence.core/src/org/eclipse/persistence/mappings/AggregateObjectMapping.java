@@ -444,7 +444,12 @@ public class AggregateObjectMapping extends AggregateMapping implements Relation
             EntityFetchGroup entityFetchGroup = descriptor.getFetchGroupManager().getEntityFetchGroup(targetFetchGroup);
             if (entityFetchGroup != null) {
                 entityFetchGroup = (EntityFetchGroup)entityFetchGroup.clone();
-                entityFetchGroup.setRootEntity((FetchGroupTracker) cacheKey.getObject());
+                // begin cuba
+                if (cacheKey != null)
+                    entityFetchGroup.setRootEntity((FetchGroupTracker) cacheKey.getObject());
+                else
+                    entityFetchGroup.setRootEntity((FetchGroupTracker) targetObject);
+                // end cuba
                 entityFetchGroup.setOnEntity(aggregate, executionSession);
             }
         }
