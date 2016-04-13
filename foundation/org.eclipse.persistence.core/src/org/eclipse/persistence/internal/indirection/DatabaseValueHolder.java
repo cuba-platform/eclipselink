@@ -9,17 +9,20 @@
  *
  * Contributors:
  *     Oracle - initial API and implementation from Oracle TopLink
- ******************************************************************************/  
+ ******************************************************************************/
 package org.eclipse.persistence.internal.indirection;
 
-import java.io.*;
-import org.eclipse.persistence.internal.helper.*;
-import org.eclipse.persistence.indirection.*;
-import org.eclipse.persistence.exceptions.*;
-import org.eclipse.persistence.internal.localization.*;
+import org.eclipse.persistence.exceptions.DatabaseException;
+import org.eclipse.persistence.indirection.ValueHolderInterface;
+import org.eclipse.persistence.indirection.WeavedAttributeValueHolderInterface;
+import org.eclipse.persistence.internal.helper.Helper;
+import org.eclipse.persistence.internal.localization.ExceptionLocalization;
+import org.eclipse.persistence.internal.localization.ToStringLocalization;
 import org.eclipse.persistence.internal.sessions.AbstractRecord;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.internal.sessions.UnitOfWorkImpl;
+
+import java.io.Serializable;
 
 /**
  * DatabaseValueHolder wraps a database-stored object and implements
@@ -43,7 +46,7 @@ public abstract class DatabaseValueHolder implements WeavedAttributeValueHolderI
     /** Stores the row representation of the object. */
     // Cannot be transient as may be required to extract the pk from a serialized object.
     protected AbstractRecord row;
-  
+
     /**
      * The variable below is used as part of the implementation of WeavedAttributeValueHolderInterface
      * It is used to track whether a valueholder that has been weaved into a class is coordinated
@@ -85,6 +88,14 @@ public abstract class DatabaseValueHolder implements WeavedAttributeValueHolderI
         if (!this.isInstantiated) {
             synchronized (this) {
                 if (!this.isInstantiated) {
+                    // We have added the following code to prevent fetch of lazy fields
+                    // from database when transaction is already finished
+                    if (session instanceof UnitOfWorkImpl) {
+                        if (((UnitOfWorkImpl) session).getLifecycle() >= UnitOfWorkImpl.Death) {
+                            throwUnfetchedAttributeException();
+                        }
+                    }
+
                     // The value must be set directly because the setValue can also cause instantiation under UOW.
                     privilegedSetValue(instantiate());
                     // Cycles can somehow recurse into this twice...
@@ -124,7 +135,7 @@ public abstract class DatabaseValueHolder implements WeavedAttributeValueHolderI
      * However only the wrapped valueholder knows how to trigger the indirection,
      * i.e. it may be a batchValueHolder, and it stores all the info like the row
      * and the query.
-     * Note: Implementations of this method are not necessarily thread-safe.  They must 
+     * Note: Implementations of this method are not necessarily thread-safe.  They must
      * be used in a synchronized manner
      */
     public abstract Object instantiateForUnitOfWorkValueHolder(UnitOfWorkValueHolder unitOfWorkValueHolder);
@@ -137,17 +148,17 @@ public abstract class DatabaseValueHolder implements WeavedAttributeValueHolderI
     public boolean isCoordinatedWithProperty(){
         return isCoordinatedWithProperty;
     }
-    
+
     /**
      * This method is used as part of the implementation of WeavedAttributeValueHolderInterface.
-     * 
+     *
      * A DatabaseValueHolder is set up by TopLink and will never be a newly weaved valueholder.
      * As a result, this method is stubbed out.
      */
     public boolean isNewlyWeavedValueHolder(){
         return false;
     }
-    
+
     /**
      * INTERNAL:
      * Answers if this valueholder is easy to instantiate.
@@ -171,7 +182,7 @@ public abstract class DatabaseValueHolder implements WeavedAttributeValueHolderI
      * UnitsOfWork.  Each time a lock query will be issued.  Hence even if
      * instantiated it may have to be instantiated again, and once instantiated
      * all fields can not be reset.
-     * Note: Implementations of this method are not necessarily thread-safe.  They must 
+     * Note: Implementations of this method are not necessarily thread-safe.  They must
      * be used in a synchronizaed manner
      */
     public abstract boolean isPessimisticLockingValueHolder();
@@ -190,7 +201,7 @@ public abstract class DatabaseValueHolder implements WeavedAttributeValueHolderI
     protected boolean isTransactionalValueHolder() {
         return ((session != null) && session.isUnitOfWork());
     }
-    
+
     /**
      * Used to determine if this is a remote uow value holder that was serialized to the server.
      * It has no reference to its wrapper value holder, so must find its original object to be able to instantiate.
@@ -198,7 +209,7 @@ public abstract class DatabaseValueHolder implements WeavedAttributeValueHolderI
     public boolean isSerializedRemoteUnitOfWorkValueHolder() {
         return false;
     }
-    
+
     /**
      * INTERNAL:
      * Run any extra code required after the valueholder instantiates
@@ -207,7 +218,7 @@ public abstract class DatabaseValueHolder implements WeavedAttributeValueHolderI
     public void postInstantiate(){
         //noop
     }
-    
+
     /**
      * Set the object. This is used only by the privileged methods. One must be very careful in using this method.
      */
@@ -239,7 +250,7 @@ public abstract class DatabaseValueHolder implements WeavedAttributeValueHolderI
         this.row = null;
         this.session = null;
     }
-    
+
     /**
      * This method is used as part of the implementation of WeavedAttributeValueHolderInterface
      * It is used internally by EclipseLink to set whether a valueholder that has been weaved into a class is coordinated
@@ -251,13 +262,13 @@ public abstract class DatabaseValueHolder implements WeavedAttributeValueHolderI
 
     /**
      * This method is used as part of the implementation of WeavedAttributeValueHolderInterface
-     * 
-     * A DatabaseValueHolder is set up by EclipseLink and will never be a newly weaved valueholder 
+     *
+     * A DatabaseValueHolder is set up by EclipseLink and will never be a newly weaved valueholder
      * As a result, this method is stubbed out.
      */
     public void setIsNewlyWeavedValueHolder(boolean isNew){
     }
-    
+
     /**
      * Set the instantiated flag to true.
      */
@@ -309,5 +320,10 @@ public abstract class DatabaseValueHolder implements WeavedAttributeValueHolderI
         } else {
             return "{" + Helper.getShortClassName(getClass()) + ": " + ToStringLocalization.buildMessage("not_instantiated", (Object[])null) + "}";
         }
+    }
+
+    protected void throwUnfetchedAttributeException() {
+        throw new IllegalStateException(
+                ExceptionLocalization.buildMessage("cannot_get_unfetched_attribute", new Object[]{"", ""}));
     }
 }
