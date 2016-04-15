@@ -3022,7 +3022,7 @@ public class EntityManagerImpl implements org.eclipse.persistence.jpa.JpaEntityM
     public static void processUnfetchedAttribute(FetchGroupTracker entity, String attributeName) {
         String errorMsg = entity._persistence_getFetchGroup().onUnfetchedAttribute(entity, attributeName);
         if(errorMsg != null) {
-            throw new javax.persistence.EntityNotFoundException(errorMsg);
+            throw new IllegalStateException(errorMsg); // cuba: changed to IllegalStateException
         }
     }
 
@@ -3033,7 +3033,7 @@ public class EntityManagerImpl implements org.eclipse.persistence.jpa.JpaEntityM
     public static void processUnfetchedAttributeForSet(FetchGroupTracker entity, String attributeName) {
         String errorMsg = entity._persistence_getFetchGroup().onUnfetchedAttributeForSet(entity, attributeName);
         if(errorMsg != null) {
-            throw new javax.persistence.EntityNotFoundException(errorMsg);
+            throw new IllegalStateException(errorMsg); // cuba: changed to IllegalStateException
         }
     }
 
