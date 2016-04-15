@@ -333,7 +333,11 @@ public class ReadObjectQuery extends ObjectLevelReadQuery {
                     if ((!hasJoining() || !this.joinedAttributeManager.hasJoinedAttributeExpressions()) && (!hasPartialAttributeExpressions())
                             && (redirector == null) && !doNotRedirect && (!hasAsOfClause()) && (!hasNonDefaultFetchGroup())
                             && (this.shouldUseSerializedObjectPolicy == shouldUseSerializedObjectPolicyDefault)
-                            && this.wasDefaultLockMode && (shouldBindAllParameters == null) && (this.hintString == null)) {
+                            && this.wasDefaultLockMode && (shouldBindAllParameters == null) && (this.hintString == null)
+                            // cuba begin: do not use custom query if BATCH mode is set for some attributes
+                            && !hasBatchReadAttributes()
+                            // cuba end
+                            ) {
                         if ((this.selectionId != null) || (this.selectionObject != null)) {// Must be primary key.
                             useCustomQuery = Boolean.TRUE;
                         } else {
