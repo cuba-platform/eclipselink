@@ -26,6 +26,7 @@ import org.eclipse.persistence.descriptors.FetchGroupManager;
 import org.eclipse.persistence.internal.localization.ExceptionLocalization;
 import org.eclipse.persistence.internal.queries.AttributeItem;
 import org.eclipse.persistence.internal.queries.EntityFetchGroup;
+import org.eclipse.persistence.internal.sessions.UnitOfWorkImpl;
 import org.eclipse.persistence.sessions.Session;
 import org.eclipse.persistence.sessions.UnitOfWork;
 
@@ -154,9 +155,18 @@ public class FetchGroup extends AttributeGroup {
         if (rootEntity != null){
             return rootEntity._persistence_getFetchGroup().onUnfetchedAttribute(rootEntity, attributeName);
         }
+        // cuba begin: prevent fetch of lazy fields from database when transaction is already finished
+        Session session = entity._persistence_getSession();
+        if (session instanceof UnitOfWorkImpl) {
+            if (((UnitOfWorkImpl) session).getLifecycle() >= UnitOfWorkImpl.Death) {
+                return ExceptionLocalization.buildMessage("cannot_get_unfetched_attribute",
+                        new Object[]{entity, attributeName});
+            }
+        }
+        // cuba end
         ReadObjectQuery query = new ReadObjectQuery(entity);
         query.setShouldUseDefaultFetchGroup(false);
-        Session session = entity._persistence_getSession();
+        //Session session = entity._persistence_getSession();
         boolean shouldLoadResultIntoSelectionObject = false;
         if (session.isUnitOfWork()) {
             shouldLoadResultIntoSelectionObject = !((UnitOfWork)session).isObjectRegistered(entity);
