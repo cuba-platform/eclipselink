@@ -88,13 +88,14 @@ public abstract class DatabaseValueHolder implements WeavedAttributeValueHolderI
         if (!this.isInstantiated) {
             synchronized (this) {
                 if (!this.isInstantiated) {
-                    // We have added the following code to prevent fetch of lazy fields
+                    // cuba begin: We have added the following code to prevent fetch of lazy fields
                     // from database when transaction is already finished
                     if (session instanceof UnitOfWorkImpl) {
                         if (((UnitOfWorkImpl) session).getLifecycle() >= UnitOfWorkImpl.Death) {
                             throwUnfetchedAttributeException();
                         }
                     }
+                    // cuba end
 
                     // The value must be set directly because the setValue can also cause instantiation under UOW.
                     privilegedSetValue(instantiate());
