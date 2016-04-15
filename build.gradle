@@ -1,4 +1,5 @@
 group = 'com.haulmont.thirdparty'
+version = '2.6.2.cuba0'
 version = '2.6.1.cuba6'
 
 apply plugin: 'maven'
