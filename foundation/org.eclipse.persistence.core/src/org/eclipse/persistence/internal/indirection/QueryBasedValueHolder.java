@@ -20,6 +20,7 @@ import org.eclipse.persistence.exceptions.*;
 import org.eclipse.persistence.internal.sessions.AbstractRecord;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.internal.sessions.UnitOfWorkImpl;
+import org.eclipse.persistence.sessions.UnitOfWork;
 
 /**
  * QueryBasedValueHolder wraps a database-stored object and implements behavior
@@ -127,13 +128,30 @@ public class QueryBasedValueHolder extends DatabaseValueHolder {
             this.refreshCascade = ((ObjectBuildingQuery)this.query).getCascadePolicy();
         }
         // cuba begin
-        if (Boolean.TRUE.equals(session.getProperty("cuba.disableSoftDelete"))) {
-            ReadQuery query = (ReadQuery) getQuery().clone();
-            query.setIsPrepared(false);
-            return session.executeQuery(query, getRow());
+        if (getQuery() instanceof ReadAllQuery) {
+            if (Boolean.TRUE.equals(session.getProperty("cuba.disableSoftDelete"))) {
+                ReadQuery query = (ReadQuery) getQuery().clone();
+                query.setIsPrepared(false);
+                return session.executeQuery(query, getRow());
+            }
+            return session.executeQuery(getQuery(), getRow());
+        } else {
+            AbstractSession clientSession = (session instanceof UnitOfWork) ? session.getParent() : session;
+            Object property = clientSession.getProperty("cuba.disableSoftDelete");
+            clientSession.setProperty("cuba.disableSoftDelete", true);
+            try {
+                ReadQuery query = (ReadQuery) getQuery().clone();
+                query.setIsPrepared(false);
+                return session.executeQuery(query, getRow());
+            } finally {
+                if (property != null)
+                    clientSession.setProperty("cuba.disableSoftDelete", property);
+                else
+                    clientSession.removeProperty("cuba.disableSoftDelete");
+            }
         }
+        // return session.executeQuery(getQuery(), getRow());
         // cuba end
-        return session.executeQuery(getQuery(), getRow());
     }
 
     /**
