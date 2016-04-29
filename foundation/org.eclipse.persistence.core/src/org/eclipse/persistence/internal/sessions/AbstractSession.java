@@ -54,6 +54,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.eclipse.persistence.config.ReferenceMode;
+import org.eclipse.persistence.cuba.CubaUtil;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.descriptors.DescriptorEvent;
 import org.eclipse.persistence.descriptors.DescriptorQueryManager;
@@ -103,23 +104,7 @@ import org.eclipse.persistence.mappings.ForeignReferenceMapping;
 import org.eclipse.persistence.mappings.foundation.AbstractTransformationMapping;
 import org.eclipse.persistence.platform.database.DatabasePlatform;
 import org.eclipse.persistence.platform.server.ServerPlatform;
-import org.eclipse.persistence.queries.AttributeGroup;
-import org.eclipse.persistence.queries.Call;
-import org.eclipse.persistence.queries.DataModifyQuery;
-import org.eclipse.persistence.queries.DataReadQuery;
-import org.eclipse.persistence.queries.DatabaseQuery;
-import org.eclipse.persistence.queries.DeleteObjectQuery;
-import org.eclipse.persistence.queries.DoesExistQuery;
-import org.eclipse.persistence.queries.InsertObjectQuery;
-import org.eclipse.persistence.queries.JPAQueryBuilder;
-import org.eclipse.persistence.queries.JPQLCall;
-import org.eclipse.persistence.queries.ObjectBuildingQuery;
-import org.eclipse.persistence.queries.ObjectLevelReadQuery;
-import org.eclipse.persistence.queries.ReadAllQuery;
-import org.eclipse.persistence.queries.ReadObjectQuery;
-import org.eclipse.persistence.queries.SQLCall;
-import org.eclipse.persistence.queries.UpdateObjectQuery;
-import org.eclipse.persistence.queries.WriteObjectQuery;
+import org.eclipse.persistence.queries.*;
 import org.eclipse.persistence.sessions.CopyGroup;
 import org.eclipse.persistence.sessions.DatabaseLogin;
 import org.eclipse.persistence.sessions.ExternalTransactionController;
@@ -1294,12 +1279,25 @@ public abstract class AbstractSession extends CoreAbstractSession<ClassDescripto
          */
         public void checkAndRefreshInvalidObject(Object object, CacheKey cacheKey, ClassDescriptor descriptor) {
             if (isConsideredInvalid(object, cacheKey, descriptor)) {
-                ReadObjectQuery query = new ReadObjectQuery();
-                query.setReferenceClass(object.getClass());
-                query.setSelectionId(cacheKey.getKey());
-                query.refreshIdentityMapResult();
-                query.setIsExecutionClone(true);
-                this.executeQuery(query);
+                // cuba begin: always load refreshed object
+                Object prop = CubaUtil.beginDisableSoftDelete(this);
+                try {
+                    ReadObjectQuery query = new ReadObjectQuery();
+                    query.setReferenceClass(object.getClass());
+                    query.setSelectionId(cacheKey.getKey());
+                    query.refreshIdentityMapResult();
+                    query.setIsExecutionClone(true);
+                    this.executeQuery(query);
+                } finally {
+                    CubaUtil.endDisableSoftDelete(this, prop);
+                }
+//                ReadObjectQuery query = new ReadObjectQuery();
+//                query.setReferenceClass(object.getClass());
+//                query.setSelectionId(cacheKey.getKey());
+//                query.refreshIdentityMapResult();
+//                query.setIsExecutionClone(true);
+//                this.executeQuery(query);
+                // cuba end
             }
         }
 
