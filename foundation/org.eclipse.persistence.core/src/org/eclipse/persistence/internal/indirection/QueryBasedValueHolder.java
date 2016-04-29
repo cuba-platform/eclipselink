@@ -12,6 +12,7 @@
  ******************************************************************************/
 package org.eclipse.persistence.internal.indirection;
 
+import org.eclipse.persistence.cuba.CubaUtil;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.exceptions.DatabaseException;
 import org.eclipse.persistence.exceptions.ValidationException;
@@ -19,7 +20,6 @@ import org.eclipse.persistence.internal.sessions.AbstractRecord;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.internal.sessions.UnitOfWorkImpl;
 import org.eclipse.persistence.queries.ReadAllQuery;
-import org.eclipse.persistence.sessions.UnitOfWork;
 import org.eclipse.persistence.mappings.AttributeAccessor;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.mappings.ForeignReferenceMapping;
@@ -134,7 +134,7 @@ public class QueryBasedValueHolder extends DatabaseValueHolder {
         }
         // cuba begin
         if (getQuery() instanceof ReadAllQuery) {
-            if (Boolean.TRUE.equals(session.getProperty("cuba.disableSoftDelete"))) {
+            if (Boolean.TRUE.equals(session.getProperty(CubaUtil.DISABLE_SOFT_DELETE))) {
                 ReadQuery query = (ReadQuery) getQuery().clone();
                 query.setIsPrepared(false);
                 Object result = session.executeQuery(query, getRow());
@@ -147,9 +147,7 @@ public class QueryBasedValueHolder extends DatabaseValueHolder {
             getQuery().setSession(null);
             return result;
         } else {
-            AbstractSession clientSession = (session instanceof UnitOfWork) ? session.getParent() : session;
-            Object property = clientSession.getProperty("cuba.disableSoftDelete");
-            clientSession.setProperty("cuba.disableSoftDelete", true);
+            Object prop = CubaUtil.beginDisableSoftDelete(session);
             try {
                 ReadQuery query = (ReadQuery) getQuery().clone();
                 query.setIsPrepared(false);
@@ -158,10 +156,7 @@ public class QueryBasedValueHolder extends DatabaseValueHolder {
                 getQuery().setSession(null);
                 return result;
             } finally {
-                if (property != null)
-                    clientSession.setProperty("cuba.disableSoftDelete", property);
-                else
-                    clientSession.removeProperty("cuba.disableSoftDelete");
+                CubaUtil.endDisableSoftDelete(session, prop);
             }
         }
         // cuba end
