@@ -12,15 +12,19 @@
  ******************************************************************************/
 package org.eclipse.persistence.internal.indirection;
 
-import org.eclipse.persistence.mappings.DatabaseMapping;
-import org.eclipse.persistence.mappings.ForeignReferenceMapping;
-import org.eclipse.persistence.queries.*;
+import org.eclipse.persistence.cuba.CubaUtil;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.exceptions.*;
+import org.eclipse.persistence.exceptions.DatabaseException;
+import org.eclipse.persistence.exceptions.ValidationException;
 import org.eclipse.persistence.internal.sessions.AbstractRecord;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.internal.sessions.UnitOfWorkImpl;
-import org.eclipse.persistence.sessions.UnitOfWork;
+import org.eclipse.persistence.mappings.DatabaseMapping;
+import org.eclipse.persistence.mappings.ForeignReferenceMapping;
+import org.eclipse.persistence.queries.ObjectBuildingQuery;
+import org.eclipse.persistence.queries.ObjectLevelReadQuery;
+import org.eclipse.persistence.queries.ReadAllQuery;
+import org.eclipse.persistence.queries.ReadQuery;
 
 /**
  * QueryBasedValueHolder wraps a database-stored object and implements behavior
@@ -129,25 +133,20 @@ public class QueryBasedValueHolder extends DatabaseValueHolder {
         }
         // cuba begin
         if (getQuery() instanceof ReadAllQuery) {
-            if (Boolean.TRUE.equals(session.getProperty("cuba.disableSoftDelete"))) {
+            if (Boolean.TRUE.equals(session.getProperty(CubaUtil.DISABLE_SOFT_DELETE))) {
                 ReadQuery query = (ReadQuery) getQuery().clone();
                 query.setIsPrepared(false);
                 return session.executeQuery(query, getRow());
             }
             return session.executeQuery(getQuery(), getRow());
         } else {
-            AbstractSession clientSession = (session instanceof UnitOfWork) ? session.getParent() : session;
-            Object property = clientSession.getProperty("cuba.disableSoftDelete");
-            clientSession.setProperty("cuba.disableSoftDelete", true);
+            Object prop = CubaUtil.beginDisableSoftDelete(session);
             try {
                 ReadQuery query = (ReadQuery) getQuery().clone();
                 query.setIsPrepared(false);
                 return session.executeQuery(query, getRow());
             } finally {
-                if (property != null)
-                    clientSession.setProperty("cuba.disableSoftDelete", property);
-                else
-                    clientSession.removeProperty("cuba.disableSoftDelete");
+                CubaUtil.endDisableSoftDelete(session, prop);
             }
         }
         // return session.executeQuery(getQuery(), getRow());
