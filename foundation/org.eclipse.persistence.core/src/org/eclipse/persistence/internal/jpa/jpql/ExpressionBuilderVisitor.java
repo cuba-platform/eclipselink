@@ -169,6 +169,14 @@ final class ExpressionBuilderVisitor implements EclipseLinkExpressionVisitor {
 	 */
 	private boolean nullAllowed;
 
+	//cuba start
+	/**
+	 * Determines whether the target relationship is allowed to be <code>null</code> in sort by condition.
+	 */
+	private boolean nullAllowedInSortBy;
+	//cuba end
+
+
 	/**
 	 * This {@link Comparator} compares two {@link Class} values and returned the appropriate numeric
 	 * type that takes precedence.
@@ -1626,7 +1634,14 @@ final class ExpressionBuilderVisitor implements EclipseLinkExpressionVisitor {
 	public void visit(OrderByItem expression) {
 
 		// Create the item
-		expression.getExpression().accept(this);
+		//cuba start
+		try {
+			nullAllowedInSortBy = true;
+			expression.getExpression().accept(this);
+		} finally {
+			nullAllowedInSortBy = false;
+		}
+		//cuba end
 
 		// Create the ordering item
 		switch (expression.getOrdering()) {
@@ -2128,6 +2143,7 @@ final class ExpressionBuilderVisitor implements EclipseLinkExpressionVisitor {
 		resolver.checkMappingType = false;
 		resolver.localExpression  = null;
 		resolver.descriptor       = null;
+		resolver.nullAllowedInSortBy = nullAllowedInSortBy;
 
 		expression.accept(resolver);
 
@@ -2480,6 +2496,13 @@ final class ExpressionBuilderVisitor implements EclipseLinkExpressionVisitor {
 		 */
 		boolean nullAllowed;
 
+		//cuba start
+		/**
+		 * Determines whether the target relationship is allowed to be <code>null</code> in sort by condition.
+		 */
+		boolean nullAllowedInSortBy;
+		//cuba end
+
 		/**
 		 * Resolves a database column.
 		 *
@@ -2529,6 +2552,9 @@ final class ExpressionBuilderVisitor implements EclipseLinkExpressionVisitor {
 				DatabaseMapping mapping = descriptor.getObjectBuilder().getMappingForAttributeName(path);
 				boolean last = (index + 1 == count);
 				boolean collectionMapping = false;
+				//cuba start
+				boolean foreignReferenceMapping = false;
+				//cuba end
 
 				// The path is a mapping
 				if (mapping != null) {
@@ -2540,6 +2566,9 @@ final class ExpressionBuilderVisitor implements EclipseLinkExpressionVisitor {
 
 					// This will tell us how to create the Expression
 					collectionMapping = mapping.isCollectionMapping();
+					//cuba start
+					foreignReferenceMapping = mapping.isForeignReferenceMapping();
+					//cuba end
 
 					// Retrieve the reference descriptor so we can continue traversing the path
 					if (!last) {
@@ -2562,7 +2591,9 @@ final class ExpressionBuilderVisitor implements EclipseLinkExpressionVisitor {
 
 						// This will tell us how to create the Expression
 						collectionMapping = queryKey.isCollectionQueryKey();
-
+						//cuba start
+						foreignReferenceMapping = queryKey.isForeignReferenceQueryKey();
+						//cuba end
 						// Retrieve the reference descriptor so we can continue traversing the path
 						if (!last && queryKey.isForeignReferenceQueryKey()) {
 							ForeignReferenceQueryKey referenceQueryKey = (ForeignReferenceQueryKey) queryKey;
@@ -2587,7 +2618,9 @@ final class ExpressionBuilderVisitor implements EclipseLinkExpressionVisitor {
 				else {
 					if (last && nullAllowed) {
 						localExpression = localExpression.getAllowingNull(path);
-					}
+					} else if (!last && foreignReferenceMapping && nullAllowedInSortBy) { //cuba start
+						localExpression = localExpression.getAllowingNull(path);
+					} //cuba end
 					else {
 						localExpression = localExpression.get(path);
 					}
