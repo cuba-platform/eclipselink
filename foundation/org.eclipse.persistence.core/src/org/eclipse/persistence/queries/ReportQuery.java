@@ -107,7 +107,10 @@ public class ReportQuery extends ReadAllQuery {
      * Used when distinct has been set on the query.  For use in TCK
      */
     protected Set<Object> returnedKeys;
-
+    //cuba begin
+    //This attribute used to include 'true' boolean in result list
+    protected boolean doNotResultIgnore;
+    //cuba end
     /**
      * INTERNAL:
      * The builder should be provided.
@@ -647,6 +650,9 @@ public class ReportQuery extends ReadAllQuery {
             }
         }
         //end GF_ISSUE_395
+        //cuba begin
+        doNotResultIgnore = true;
+        //cuba end
         if (shouldReturnSingleAttribute()) {
             return reportQueryResult.getResults().get(0);
         } else if (shouldReturnArray()) {
@@ -688,10 +694,19 @@ public class ReportQuery extends ReadAllQuery {
         //If only the attribute is desired, then buildObject will only get the first attribute each time
         for (int index = 0; index < size; index++) {
             // GF_ISSUE_395
-            Object result = buildObject((AbstractRecord)rows.get(index), rows);
-            if (result != RESULT_IGNORED) {
-                containerPolicy.addInto(result, reportResults, this.session);
+            //cuba begin
+            try {
+                doNotResultIgnore = false;
+                Object result = buildObject((AbstractRecord)rows.get(index), rows);
+                if (result != RESULT_IGNORED) {
+                    containerPolicy.addInto(result, reportResults, this.session);
+                } else if (doNotResultIgnore) {
+                    containerPolicy.addInto(result, reportResults, this.session);
+                }
+            } finally {
+                doNotResultIgnore = false;
             }
+            //cuba end
             //end GF_ISSUE
         }
         if (shouldCacheQueryResults()) {
