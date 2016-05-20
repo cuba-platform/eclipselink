@@ -660,7 +660,7 @@ public class ReportQuery extends ReadAllQuery {
                 Object result = buildObject((AbstractRecord)rows.get(index), rows);
                 if (result != RESULT_IGNORED) {
                     containerPolicy.addInto(result, reportResults, this.session);
-                } else if (result == RESULT_IGNORED && doNotResultIgnore) {
+                } else if (doNotResultIgnore) {
                     containerPolicy.addInto(result, reportResults, this.session);
                 }
             } finally {
