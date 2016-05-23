@@ -2622,7 +2622,7 @@ final class ExpressionBuilderVisitor implements EclipseLinkExpressionVisitor {
                 else {
                     if (last && nullAllowed) {
                         localExpression = localExpression.getAllowingNull(path);
-                    } else if (!last && foreignReferenceMapping && nullAllowedInSortBy) { //cuba start
+                    } else if (foreignReferenceMapping && nullAllowedInSortBy) { //cuba start
 						localExpression = localExpression.getAllowingNull(path);
 					} //cuba end
                     else {
