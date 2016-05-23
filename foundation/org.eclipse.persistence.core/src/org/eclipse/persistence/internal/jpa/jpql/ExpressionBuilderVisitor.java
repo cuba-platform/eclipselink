@@ -180,6 +180,11 @@ final class ExpressionBuilderVisitor implements EclipseLinkExpressionVisitor {
 	 * Determines whether the target relationship is allowed to be <code>null</code> in sort by condition.
 	 */
 	private boolean nullAllowedInSortBy;
+
+	/**
+	 * Determines whether the target expression 'is null' expression
+	 */
+	boolean isNullExpression;
 	//cuba end
 
 
@@ -1532,27 +1537,35 @@ final class ExpressionBuilderVisitor implements EclipseLinkExpressionVisitor {
         type[0] = Boolean.class;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void visit(NullComparisonExpression expression) {
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public void visit(NullComparisonExpression expression) {
+//cuba begin
+		if (!expression.hasNot()) {
+			isNullExpression = true;
+		}
+		//cuba end
+		try {
+		// Create the expression first
+		expression.getExpression().accept(this);
 
-        // Create the expression first
-        expression.getExpression().accept(this);
+		// Mark it as NOT NULL
+		if (expression.hasNot()) {
+			queryExpression = queryExpression.notNull();
+		}
+		// Mark it as IS NULL
+		else {
+			queryExpression = queryExpression.isNull();
+		}
 
-        // Mark it as NOT NULL
-        if (expression.hasNot()) {
-            queryExpression = queryExpression.notNull();
-        }
-        // Mark it as IS NULL
-        else {
-            queryExpression = queryExpression.isNull();
-        }
-
-        // Set the expression type
-        type[0] = Boolean.class;
-    }
+		// Set the expression type
+		type[0] = Boolean.class;
+	}finally {
+			isNullExpression = false;
+		}
+	}
 
     /**
      * {@inheritDoc}
@@ -2148,6 +2161,7 @@ final class ExpressionBuilderVisitor implements EclipseLinkExpressionVisitor {
         resolver.localExpression  = null;
         resolver.descriptor       = null;
 		resolver.nullAllowedInSortBy = nullAllowedInSortBy;
+		resolver.isNullExpression = isNullExpression;
 
         expression.accept(resolver);
 
@@ -2505,6 +2519,11 @@ final class ExpressionBuilderVisitor implements EclipseLinkExpressionVisitor {
 		 * Determines whether the target relationship is allowed to be <code>null</code> in sort by condition.
 		 */
 		boolean nullAllowedInSortBy;
+
+		/**
+		 * Determines whether the target expression 'is null' expression
+		 */
+		boolean isNullExpression;
 		//cuba end
 
 		/**
@@ -2623,6 +2642,8 @@ final class ExpressionBuilderVisitor implements EclipseLinkExpressionVisitor {
                     if (last && nullAllowed) {
                         localExpression = localExpression.getAllowingNull(path);
                     } else if (foreignReferenceMapping && nullAllowedInSortBy) { //cuba start
+						localExpression = localExpression.getAllowingNull(path);
+					} else if (last && foreignReferenceMapping && isNullExpression) {
 						localExpression = localExpression.getAllowingNull(path);
 					} //cuba end
                     else {
