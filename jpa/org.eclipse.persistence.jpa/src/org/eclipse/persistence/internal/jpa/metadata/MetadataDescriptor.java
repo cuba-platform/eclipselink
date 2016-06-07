@@ -122,6 +122,7 @@ import org.eclipse.persistence.descriptors.DescriptorEventListener;
 import org.eclipse.persistence.descriptors.RelationalDescriptor;
 import org.eclipse.persistence.descriptors.ReturningPolicy;
 import org.eclipse.persistence.descriptors.SingleTableMultitenantPolicy;
+import org.eclipse.persistence.exceptions.DescriptorException;
 import org.eclipse.persistence.exceptions.ValidationException;
 import org.eclipse.persistence.internal.descriptors.OptimisticLockingPolicy;
 import org.eclipse.persistence.internal.descriptors.VirtualAttributeMethodInfo;
@@ -1037,6 +1038,10 @@ public class MetadataDescriptor {
      * It assumes there is one.
      */
     public DatabaseField getPrimaryKeyField() {
+        List<DatabaseField> primaryKeys = getPrimaryKeyFields();
+        if (primaryKeys.isEmpty()) {
+            throw DescriptorException.primaryKeyFieldsNotSepcified(m_descriptor);
+        }
         return getPrimaryKeyFields().iterator().next();
     }
 
