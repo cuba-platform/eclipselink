@@ -30,8 +30,9 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,7 +40,6 @@ import java.util.Vector;
 
 import javax.persistence.CacheStoreMode;
 import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
 import javax.persistence.FlushModeType;
 import javax.persistence.Query;
 import javax.persistence.metamodel.Attribute;
@@ -57,7 +57,6 @@ import junit.framework.Test;
 import junit.framework.TestSuite;
 
 import org.eclipse.persistence.annotations.BatchFetchType;
-import org.eclipse.persistence.annotations.JoinFetch;
 import org.eclipse.persistence.config.CascadePolicy;
 import org.eclipse.persistence.config.HintValues;
 import org.eclipse.persistence.config.QueryHints;
@@ -66,6 +65,8 @@ import org.eclipse.persistence.descriptors.DescriptorEvent;
 import org.eclipse.persistence.descriptors.DescriptorEventAdapter;
 import org.eclipse.persistence.descriptors.invalidation.CacheInvalidationPolicy;
 import org.eclipse.persistence.descriptors.invalidation.TimeToLiveCacheInvalidationPolicy;
+import org.eclipse.persistence.expressions.Expression;
+import org.eclipse.persistence.expressions.ExpressionBuilder;
 import org.eclipse.persistence.indirection.IndirectCollection;
 import org.eclipse.persistence.internal.helper.ClassConstants;
 import org.eclipse.persistence.internal.helper.DatabaseField;
@@ -91,6 +92,7 @@ import org.eclipse.persistence.mappings.OneToOneMapping;
 import org.eclipse.persistence.mappings.UnidirectionalOneToManyMapping;
 import org.eclipse.persistence.queries.CursoredStream;
 import org.eclipse.persistence.queries.DoesExistQuery;
+import org.eclipse.persistence.queries.ReadAllQuery;
 import org.eclipse.persistence.sessions.DatabaseRecord;
 import org.eclipse.persistence.sessions.Session;
 import org.eclipse.persistence.sessions.server.ServerSession;
@@ -98,6 +100,10 @@ import org.eclipse.persistence.testing.framework.JoinedAttributeTestHelper;
 import org.eclipse.persistence.testing.framework.QuerySQLTracker;
 import org.eclipse.persistence.testing.framework.junit.JUnitTestCase;
 import org.eclipse.persistence.testing.framework.junit.JUnitTestCaseHelper;
+import org.eclipse.persistence.testing.models.jpa.advanced.Bill;
+import org.eclipse.persistence.testing.models.jpa.advanced.BillLine;
+import org.eclipse.persistence.testing.models.jpa.advanced.BillLineItem;
+import org.eclipse.persistence.testing.models.jpa.advanced.BillAction;
 import org.eclipse.persistence.testing.models.jpa.advanced.Address;
 import org.eclipse.persistence.testing.models.jpa.advanced.AdvancedTableCreator;
 import org.eclipse.persistence.testing.models.jpa.advanced.Bag;
@@ -142,7 +148,7 @@ import org.eclipse.persistence.testing.models.jpa.advanced.additionalcriteria.Sc
 import org.eclipse.persistence.testing.models.jpa.advanced.additionalcriteria.Student;
 import org.eclipse.persistence.tools.schemaframework.SchemaManager;
 import org.eclipse.persistence.tools.schemaframework.StoredFunctionDefinition;
-import org.hamcrest.core.IsEqual;
+import org.junit.Assert;
 
 /**
  * This test suite tests EclipseLink JPA annotations extensions.
@@ -244,6 +250,7 @@ public class AdvancedJPAJunitTest extends JUnitTestCase {
         suite.addTest(new AdvancedJPAJunitTest("testJoinFetchWithRefreshOnRelatedEntity"));
         suite.addTest(new AdvancedJPAJunitTest("testSharedEmbeddedAttributeOverrides"));
         suite.addTest(new AdvancedJPAJunitTest("testTransparentIndirectionValueHolderSessionReset"));
+        suite.addTest(new AdvancedJPAJunitTest("testTransparentIndirectionQuerySessionReset"));
         
         if (!isJPA10()) {
             // These tests use JPA 2.0 entity manager API
@@ -3303,6 +3310,347 @@ public class AdvancedJPAJunitTest extends JUnitTestCase {
             }
             commitTransaction(em);
         } finally {
+            closeEntityManager(em);
+        }
+    }
+    
+    /**
+     * Bug 489898 - RepeatableWriteUnitOfWork linked by QueryBasedValueHolder in shared cache in specific scenario
+     * 
+     * Complex scenario: In a transaction, associate an existing object to a new object, refresh the existing object.
+     * In a second transaction, read the new object and traverse relationships to the existing object, and trigger
+     * an indirect relationship. The existing wrapped indirection query on the indirect relationship should 
+     * ensure that the UnitOfWork (RepeatableWriteUnitOfWork) used for the query is unreferenced correctly, to 
+     * avoid referencing it within the shared cache, via the existing referenced query.    
+     */
+    public void testTransparentIndirectionQuerySessionReset() {
+        Bill bill = null;
+        BillLine billLine = null;
+        BillLineItem billLineItem = null;
+        BillAction billAction = null;
+        
+        // setup
+        EntityManager em = createEntityManager();
+        try {
+            beginTransaction(em);
+            
+            bill = new Bill();
+            bill.setOrderIdentifier("Test Bill");
+            
+            billLine = new BillLine();
+            billLine.setQuantity(6);
+            bill.addBillLine(billLine);
+            
+            billLineItem = new BillLineItem();
+            billLineItem.setItemName("Test Widget");
+            billLine.addBillLineItem(billLineItem);
+            
+            em.persist(bill);
+            em.persist(billLine);
+            em.persist(billLineItem);
+            
+            commitTransaction(em);
+            
+            assertNotNull("bill should be non-null", bill);
+            assertNotNull("bill's id should be non-null", bill.getId());
+            assertNotNull("billLine should be non-null", billLine);
+            assertNotNull("billLine's id should be non-null", billLine.getId());
+            assertNotNull("billLineItem should be non-null", billLineItem);
+            assertNotNull("billLineItem's id should be non-null", billLineItem.getId());
+        } finally {
+            closeEntityManager(em);
+            clearCache(); // start test with an empty cache
+        }
+        
+        try {
+            // test - txn #1 : read, modify, persist, refresh related Entity
+            em = createEntityManager();
+            try {
+                beginTransaction(em);
+                
+                Bill billReRead = em.createQuery("SELECT b FROM Bill b where b.id=" + bill.getId(), Bill.class).getSingleResult();
+                assertNotNull(billReRead);
+                BillLine billLineReRead = billReRead.getBillLines().get(0);
+                assertNotNull(billLineReRead);
+                
+                billAction = new BillAction();
+                billAction.setBillLine(billLineReRead);
+                billAction.setPriority(2);
+                
+                em.persist(billAction);
+                
+                em.refresh(billLineReRead); // refresh
+                
+                commitTransaction(em);
+            } finally {
+                if (isTransactionActive(em)) {
+                    rollbackTransaction(em);
+                }
+                closeEntityManager(em);
+            }
+            
+            // test - txn #2 : read, modify and trigger relationship on related Entity
+            em = createEntityManager();
+            try {
+                beginTransaction(em);
+                
+                Bill billReRead = em.createQuery("SELECT b FROM Bill b where b.id=" + bill.getId(), Bill.class).getSingleResult();
+                billReRead.setStatus(Bill.STATUS_PROCESSING); // DM: if there is no update to Order, issue doesn't occur
+                
+                BillAction billActionReRead = em.createQuery("SELECT a FROM BillAction a where a.id=" + billAction.getId(), BillAction.class).getSingleResult();
+                assertNotNull(billActionReRead);
+                
+                BillLine billLineReRead = billActionReRead.getBillLine();
+                assertNotNull(billLineReRead);
+                
+                billLineReRead.getBillLineItems().size(); // Access & trigger BillLine -> BillLineItems list
+                
+                commitTransaction(em);
+            } finally {
+                if (isTransactionActive(em)) {
+                    rollbackTransaction(em);
+                }
+                closeEntityManager(em);
+            }
+            
+            // verify
+            // Failure case: non-null session (a UnitOfWork/RepeatableWriteUnitOfWork) referenced in the wrapped ValueHolder's query.
+            ServerSession srv = getServerSession();
+            ClassDescriptor descriptor = srv.getDescriptor(billLine);
+            Long blId = billLine.getId();
+            
+            BillLine cachedBillLine = (BillLine)srv.getIdentityMapAccessor().getFromIdentityMap(blId, BillLine.class);
+            assertNotNull("BillLine from shared cache is null with id: " + blId, cachedBillLine);
+            
+            OneToManyMapping mapping = (OneToManyMapping)srv.getDescriptor(cachedBillLine).getMappingForAttributeName("billLineItems");
+            IndirectContainer billLineItemsVH = (IndirectContainer) mapping.getAttributeValueFromObject(cachedBillLine);
+            assertNotNull("BillLineItems ValueHolder should not be null", billLineItemsVH);
+            
+            ValueHolderInterface wrappedVH = billLineItemsVH.getValueHolder();
+            assertNotNull("Wrapped ValueHolder should not be null", wrappedVH);
+            
+            if (wrappedVH instanceof QueryBasedValueHolder) {
+                DatabaseQuery query = ((QueryBasedValueHolder)wrappedVH).getQuery();
+                if (query.getSession() != null && query.getSession().isUnitOfWork()) {
+                    fail("UnitOfWork referenced in Query from wrapped QueryBasedValueHolder in shared cache");
+                }
+            }
+        } finally {
+            // reset
+            em = createEntityManager();
+            try {
+                beginTransaction(em);
+                bill = em.find(Bill.class, bill.getId());
+                if (bill != null) {
+                    em.remove(bill);
+                }
+                billLine = em.find(BillLine.class, billLine.getId());
+                if (billLine != null) {
+                    em.remove(billLine);
+                }
+                billLineItem = em.find(BillLineItem.class, billLineItem.getId());
+                if (billLineItem != null) {
+                    em.remove(billLineItem);
+                }
+                if (billAction != null) {
+                    billAction = em.find(BillAction.class, billAction.getId());
+                    if (billAction != null) {
+                        em.remove(billAction);
+                    }
+                }
+                commitTransaction(em);
+            } finally {
+                closeEntityManager(em);
+            }
+        }
+    }
+
+    /**
+     * Bug 412056 Test batch fetch with size smaller than results in reverse order
+     */
+    public void testEmployeeToProjectWithBatchFetchTypeInReverseIteration() {
+        final String lastName = "testEmployeeToProject";
+
+        // Set up
+        Set<Employee> employeesToRemove = new HashSet<>();
+        EntityManager em = createEntityManager();
+        for (int i = 0; i < 100; i++) {
+            beginTransaction(em);
+            Employee employee = new Employee();
+            employee.setLastName(lastName);
+            employeesToRemove.add(employee);
+            em.persist(employee);
+            for (int j = 0; j < 20; j++) {
+                Project project = new Project();
+                employee.addProject(project);
+                em.persist(project);
+            }
+            commitTransaction(em);
+        }
+
+        JpaEntityManager jpaEntityManager = (JpaEntityManager) em.getDelegate();
+        jpaEntityManager.getUnitOfWork().getIdentityMapAccessor().initializeAllIdentityMaps();
+        try {
+            Expression exp = new ExpressionBuilder(Employee.class);
+            EJBQueryImpl query = (EJBQueryImpl) jpaEntityManager.createQuery(exp, Employee.class);
+            ((ReadAllQuery) query.getDatabaseQuery()).addBatchReadAttribute("projects");
+            ((ReadAllQuery) query.getDatabaseQuery()).setBatchFetchType(BatchFetchType.IN);
+            ((ReadAllQuery) query.getDatabaseQuery()).setBatchFetchSize(10);
+            List<Employee> employees = query.getResultList();
+
+            // Trigger the bug
+            Collections.reverse(employees);
+
+            int count = 0;
+            try {
+                for (Employee employee : employees) {
+                    if (lastName.equals(employee.getLastName())) {
+                        for (Project project : employee.getProjects()) {
+                            count++;
+                        }
+                    }
+                }
+                Assert.assertEquals("Project objects received are not as many as expected", 2000, count);
+            } catch (ArrayIndexOutOfBoundsException x) {
+                Assert.fail(Helper.printStackTraceToString(x));
+            }
+        } finally {
+            // Clean up
+            beginTransaction(em);
+            for (Employee employee : employeesToRemove) {
+                employee = em.merge(employee);
+                for (Project project : employee.getProjects()) {
+                    em.remove(em.merge(project));
+                }
+                em.remove(employee);
+            }
+            commitTransaction(em);
+            closeEntityManager(em);
+        }
+    }
+
+    /**
+     * Bug 412056 Test batch fetch with size smaller than results with custom iteration
+     */
+    public void testEmployeeToProjectWithBatchFetchTypeInCustomIteration() {
+        final String lastName = "testEmployeeToProject";
+
+        // Set up
+        Set<Employee> employeesToRemove = new HashSet<>();
+        EntityManager em = createEntityManager();
+        for (int i = 0; i < 100; i++) {
+            beginTransaction(em);
+            Employee employee = new Employee();
+            employee.setLastName(lastName);
+            employeesToRemove.add(employee);
+            em.persist(employee);
+            for (int j = 0; j < 20; j++) {
+                Project project = new Project();
+                employee.addProject(project);
+                em.persist(project);
+            }
+            commitTransaction(em);
+        }
+
+        JpaEntityManager jpaEntityManager = (JpaEntityManager) em.getDelegate();
+        jpaEntityManager.getUnitOfWork().getIdentityMapAccessor().initializeAllIdentityMaps();
+        try {
+            Expression exp = new ExpressionBuilder(Employee.class);
+            EJBQueryImpl query = (EJBQueryImpl) jpaEntityManager.createQuery(exp, Employee.class);
+            ((ReadAllQuery) query.getDatabaseQuery()).addBatchReadAttribute("projects");
+            ((ReadAllQuery) query.getDatabaseQuery()).setBatchFetchType(BatchFetchType.IN);
+            ((ReadAllQuery) query.getDatabaseQuery()).setBatchFetchSize(10);
+            List<Employee> employees = query.getResultList();
+
+            // Trigger the bug
+            employees.add(employees.remove(0));
+
+            int count = 0;
+            try {
+                for (Employee employee : employees) {
+                    if (lastName.equals(employee.getLastName())) {
+                        for (Project project : employee.getProjects()) {
+                            count++;
+                        }
+                    }
+                }
+                Assert.assertEquals("Project objects received are not as many as expected", 2000, count);
+            } catch (ArrayIndexOutOfBoundsException x) {
+                Assert.fail(Helper.printStackTraceToString(x));
+            }
+        } finally {
+            // Clean up
+            beginTransaction(em);
+            for (Employee employee : employeesToRemove) {
+                employee = em.merge(employee);
+                for (Project project : employee.getProjects()) {
+                    em.remove(em.merge(project));
+                }
+                em.remove(employee);
+            }
+            commitTransaction(em);
+            closeEntityManager(em);
+        }
+    }
+
+    /**
+     * Bug 412056 Test batch fetch with size one less than results in random order
+     */
+    public void testEmployeeToProjectWithBatchFetchTypeInRandomIteration() {
+        final String lastName = "testRandomEmployeeToProject";
+
+        // Set up
+        Set<Employee> employeesToRemove = new HashSet<>();
+        EntityManager em = createEntityManager();
+        for (int i = 0; i < 100; i++) {
+            beginTransaction(em);
+            Employee employee = new Employee();
+            employee.setLastName(lastName);
+            employeesToRemove.add(employee);
+            em.persist(employee);
+            for (int j = 0; j < 20; j++) {
+                Project project = new Project();
+                employee.addProject(project);
+                em.persist(project);
+            }
+            commitTransaction(em);
+        }
+
+        JpaEntityManager jpaEntityManager = (JpaEntityManager) em.getDelegate();
+        jpaEntityManager.getUnitOfWork().getIdentityMapAccessor().initializeAllIdentityMaps();
+        try {
+            Expression exp = new ExpressionBuilder(Employee.class).get("lastName").equal(lastName);
+            EJBQueryImpl query = (EJBQueryImpl) jpaEntityManager.createQuery(exp, Employee.class);
+            ((ReadAllQuery) query.getDatabaseQuery()).addBatchReadAttribute("projects");
+            ((ReadAllQuery) query.getDatabaseQuery()).setBatchFetchType(BatchFetchType.IN);
+            ((ReadAllQuery) query.getDatabaseQuery()).setBatchFetchSize(99);
+            List<Employee> employees = query.getResultList();
+
+            // Trigger the bug
+            Collections.shuffle(employees);
+
+            int count = 0;
+            try {
+                for (Employee employee : employees) {
+                    for (Project project : employee.getProjects()) {
+                        count++;
+                    }
+                }
+                Assert.assertEquals("Project objects received are not as many as expected", 2000, count);
+            } catch (ArrayIndexOutOfBoundsException x) {
+                Assert.fail(Helper.printStackTraceToString(x));
+            }
+        } finally {
+            // Clean up
+            beginTransaction(em);
+            for (Employee employee : employeesToRemove) {
+                employee = em.merge(employee);
+                for (Project project : employee.getProjects()) {
+                    em.remove(em.merge(project));
+                }
+                em.remove(employee);
+            }
+            commitTransaction(em);
             closeEntityManager(em);
         }
     }
