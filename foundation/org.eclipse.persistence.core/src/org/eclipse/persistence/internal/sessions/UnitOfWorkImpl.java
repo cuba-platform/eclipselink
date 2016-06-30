@@ -159,6 +159,11 @@ public class UnitOfWorkImpl extends AbstractSession implements org.eclipse.persi
      * Map of primary key to list of new objects. Used to speedup in-memory querying.
      */
     protected Map<Object, IdentityHashSet>        primaryKeyToNewObjects;
+
+    //cuba begin
+    protected Set<Object> objectsInLoading;
+    //cuba end
+
     /**
      * Stores a map from the clone to the original merged object, as a different instance is used as the original for merges.
      */
@@ -2624,6 +2629,49 @@ public class UnitOfWorkImpl extends AbstractSession implements org.eclipse.persi
     protected boolean hasObjectsDeletedDuringCommit() {
         return ((objectsDeletedDuringCommit != null) && !objectsDeletedDuringCommit.isEmpty());
     }
+
+    //cuba begin
+    public Set getObjectsInLoading() {
+        if (objectsInLoading == null) {
+            objectsInLoading = new IdentityHashSet();
+        }
+        return objectsInLoading;
+    }
+
+    @Override
+    public void load(Object objectOrCollection, AttributeGroup group) {
+        if (objectOrCollection != null && !(objectOrCollection instanceof Collection)) {
+            if (!getObjectsInLoading().contains(objectOrCollection)) {
+                try {
+                    getObjectsInLoading().add(objectOrCollection);
+                    super.load(objectOrCollection, group);
+                } finally {
+                    getObjectsInLoading().remove(objectOrCollection);
+                }
+            }
+        } else {
+            super.load(objectOrCollection, group);
+        }
+    }
+
+    @Override
+    public void load(Object objectOrCollection, AttributeGroup group, ClassDescriptor referenceDescriptor, boolean fromFetchGroup) {
+        if (objectOrCollection != null && !(objectOrCollection instanceof Collection)) {
+            if (!getObjectsInLoading().contains(objectOrCollection)) {
+                try {
+                    getObjectsInLoading().add(objectOrCollection);
+                    super.load(objectOrCollection, group, referenceDescriptor, fromFetchGroup);
+                } finally {
+                    getObjectsInLoading().remove(objectOrCollection);
+                }
+            }
+        } else {
+            super.load(objectOrCollection, group, referenceDescriptor, fromFetchGroup);
+        }
+    }
+    //cuba end
+
+
 
     /**
      * INTERNAL:
