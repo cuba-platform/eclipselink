@@ -2026,9 +2026,13 @@ public abstract class ObjectLevelReadQuery extends ObjectBuildingQuery {
             setIsPrepared(true);
             return true;
         }
-        this.descriptor.getQueryManager().putCachedExpressionQuery(this);
-        this.isCachedExpressionQuery = true;
-        this.isExecutionClone = false;
+        // cuba begin
+        if (org.eclipse.persistence.internal.helper.CubaUtil.isSoftDeletion()) {
+            this.descriptor.getQueryManager().putCachedExpressionQuery(this);
+            this.isCachedExpressionQuery = true;
+            this.isExecutionClone = false;
+        }
+        // cuba end
         return false;
     }
 

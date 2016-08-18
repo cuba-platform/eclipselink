@@ -54,7 +54,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.eclipse.persistence.config.ReferenceMode;
-import org.eclipse.persistence.cuba.CubaUtil;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.descriptors.DescriptorEvent;
 import org.eclipse.persistence.descriptors.DescriptorQueryManager;
@@ -1280,7 +1279,7 @@ public abstract class AbstractSession extends CoreAbstractSession<ClassDescripto
         public void checkAndRefreshInvalidObject(Object object, CacheKey cacheKey, ClassDescriptor descriptor) {
             if (isConsideredInvalid(object, cacheKey, descriptor)) {
                 // cuba begin: always load refreshed object
-                Object prop = CubaUtil.beginDisableSoftDelete(this);
+                Boolean prevSoftDeletion = org.eclipse.persistence.internal.helper.CubaUtil.setSoftDeletion(false);
                 try {
                     ReadObjectQuery query = new ReadObjectQuery();
                     query.setReferenceClass(object.getClass());
@@ -1289,7 +1288,7 @@ public abstract class AbstractSession extends CoreAbstractSession<ClassDescripto
                     query.setIsExecutionClone(true);
                     this.executeQuery(query);
                 } finally {
-                    CubaUtil.endDisableSoftDelete(this, prop);
+                    org.eclipse.persistence.internal.helper.CubaUtil.setSoftDeletion(prevSoftDeletion);
                 }
 //                ReadObjectQuery query = new ReadObjectQuery();
 //                query.setReferenceClass(object.getClass());
