@@ -827,7 +827,7 @@ public class EntityManagerImpl implements org.eclipse.persistence.jpa.JpaEntityM
 
         // cuba
         ReadObjectQuery query = null;
-        if (!Boolean.TRUE.equals(session.getProperty("cuba.disableSoftDelete"))) {
+        if (org.eclipse.persistence.internal.helper.CubaUtil.isSoftDeletion()) {
             // Get the read object query and apply the properties to it.
             // PERF: use descriptor defined query to avoid extra query creation.
             query = descriptor.getQueryManager().getReadObjectQuery();

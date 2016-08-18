@@ -313,7 +313,7 @@ public class ReadObjectQuery extends ObjectLevelReadQuery {
      */
     protected DatabaseQuery checkForCustomQuery(AbstractSession session, AbstractRecord translationRow) {
         // begin cuba
-        if (Boolean.TRUE.equals(session.getProperty("cuba.disableSoftDelete"))) {
+        if (!org.eclipse.persistence.internal.helper.CubaUtil.isSoftDeletion()) {
             return null;
         }
         // end cuba

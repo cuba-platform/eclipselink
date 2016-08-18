@@ -1978,7 +1978,7 @@ public abstract class ObjectLevelReadQuery extends ObjectBuildingQuery {
             return true;
         }
         // cuba begin
-        if (!Boolean.TRUE.equals(session.getProperty("cuba.disableSoftDelete"))) {
+        if (org.eclipse.persistence.internal.helper.CubaUtil.isSoftDeletion()) {
             this.descriptor.getQueryManager().putCachedExpressionQuery(this);
             this.isCachedExpressionQuery = true;
             this.isExecutionClone = false;

@@ -12,7 +12,6 @@
  ******************************************************************************/
 package org.eclipse.persistence.internal.indirection;
 
-import org.eclipse.persistence.cuba.CubaUtil;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.exceptions.DatabaseException;
 import org.eclipse.persistence.exceptions.ValidationException;
@@ -133,20 +132,20 @@ public class QueryBasedValueHolder extends DatabaseValueHolder {
         }
         // cuba begin
         if (getQuery() instanceof ReadAllQuery) {
-            if (Boolean.TRUE.equals(session.getProperty(CubaUtil.DISABLE_SOFT_DELETE))) {
+            if (!org.eclipse.persistence.internal.helper.CubaUtil.isSoftDeletion()) {
                 ReadQuery query = (ReadQuery) getQuery().clone();
                 query.setIsPrepared(false);
                 return session.executeQuery(query, getRow());
             }
             return session.executeQuery(getQuery(), getRow());
         } else {
-            Object prop = CubaUtil.beginDisableSoftDelete(session);
+            Boolean prevSoftDeletion = org.eclipse.persistence.internal.helper.CubaUtil.setSoftDeletion(false);
             try {
                 ReadQuery query = (ReadQuery) getQuery().clone();
                 query.setIsPrepared(false);
                 return session.executeQuery(query, getRow());
             } finally {
-                CubaUtil.endDisableSoftDelete(session, prop);
+                org.eclipse.persistence.internal.helper.CubaUtil.setSoftDeletion(prevSoftDeletion);
             }
         }
         // return session.executeQuery(getQuery(), getRow());
