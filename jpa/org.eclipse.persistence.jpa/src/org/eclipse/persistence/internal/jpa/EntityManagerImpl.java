@@ -917,9 +917,13 @@ public class EntityManagerImpl implements org.eclipse.persistence.jpa.JpaEntityM
             }
         }
 
-        // Get the read object query and apply the properties to it.
-        // PERF: use descriptor defined query to avoid extra query creation.
-        ReadObjectQuery query = descriptor.getQueryManager().getReadObjectQuery();
+        // cuba
+        ReadObjectQuery query = null;
+        if (org.eclipse.persistence.internal.helper.CubaUtil.isSoftDeletion()) {
+            // Get the read object query and apply the properties to it.
+            // PERF: use descriptor defined query to avoid extra query creation.
+            query = descriptor.getQueryManager().getReadObjectQuery();
+        }
 
         if (query == null) {
             // The properties/query hints and setIsExecutionClone etc. is set
