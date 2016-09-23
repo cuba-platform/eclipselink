@@ -62,10 +62,7 @@ import org.eclipse.persistence.internal.helper.DeferredLockManager;
 import org.eclipse.persistence.internal.helper.InvalidObject;
 import org.eclipse.persistence.internal.helper.NonSynchronizedVector;
 import org.eclipse.persistence.internal.history.UniversalAsOfClause;
-import org.eclipse.persistence.internal.queries.DatabaseQueryMechanism;
-import org.eclipse.persistence.internal.queries.ExpressionQueryMechanism;
-import org.eclipse.persistence.internal.queries.JoinedAttributeManager;
-import org.eclipse.persistence.internal.queries.QueryByExampleMechanism;
+import org.eclipse.persistence.internal.queries.*;
 import org.eclipse.persistence.internal.sessions.AbstractRecord;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.internal.sessions.UnitOfWorkImpl;
@@ -1724,7 +1721,22 @@ public abstract class ObjectLevelReadQuery extends ObjectBuildingQuery {
             if (mapping == null) {
                 throw QueryException.fetchGroupAttributeNotMapped(attribute);
             }
-            fetchedFields.addAll(mapping.getFields());
+            //cuba begin
+            if (mapping.isAggregateObjectMapping()) {
+                AttributeItem aggregate = getExecutionFetchGroup().getItem(attribute);
+                if (aggregate.getGroup() != null) {
+                    for(String attributeInAggregate: aggregate.getGroup().getAttributeNames()) {
+                        DatabaseMapping mappingInAggregate = mapping.getReferenceDescriptor().getObjectBuilder().getMappingForAttributeName(attributeInAggregate);
+                        if (mappingInAggregate == null) {
+                            throw QueryException.fetchGroupAttributeNotMapped(attributeInAggregate);
+                        }
+                        fetchedFields.addAll(mappingInAggregate.getFields());
+                    }
+                }
+            } else {
+                fetchedFields.addAll(mapping.getFields());
+            }
+            //cuba end
         }
         if ((nestedMapping != null) && nestedMapping.isCollectionMapping()) {
             List<DatabaseField> additionalFields = nestedMapping.getContainerPolicy().getAdditionalFieldsForJoin((CollectionMapping)nestedMapping);
