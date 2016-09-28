@@ -271,6 +271,13 @@ public class CopyGroup extends AttributeGroup {
         return clone;
     }
 
+    @Override
+    public CopyGroup cloneWithSameAttributes() {
+        CopyGroup clone = (CopyGroup)super.cloneWithSameAttributes();
+        clone.copies = new IdentityHashMap();
+        return clone;
+    }
+
     /**
      * Returns CopyGroup corresponding to the passed (possibly nested) attribute.
      */
