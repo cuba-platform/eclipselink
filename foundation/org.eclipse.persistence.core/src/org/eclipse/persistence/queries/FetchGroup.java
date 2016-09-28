@@ -323,6 +323,11 @@ public class FetchGroup extends AttributeGroup {
         return (FetchGroup)super.clone();
     }
 
+    @Override
+    public FetchGroup cloneWithSameAttributes() {
+        return (FetchGroup)super.cloneWithSameAttributes();
+    }
+
     public LoadGroup toLoadGroup(Map<AttributeGroup, LoadGroup> cloneMap, boolean loadOnly){
         if (loadOnly && !this.shouldLoad){
             return null;
