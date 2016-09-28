@@ -1664,6 +1664,7 @@ public abstract class ObjectLevelReadQuery extends ObjectBuildingQuery {
             if (mapping == null) {
                 throw QueryException.fetchGroupAttributeNotMapped(attribute);
             }
+            //cuba begin
             if (mapping.isAggregateObjectMapping()) {
                 AttributeItem aggregate = getExecutionFetchGroup().getItem(attribute);
                 if (aggregate.getGroup() != null) {
@@ -1678,6 +1679,7 @@ public abstract class ObjectLevelReadQuery extends ObjectBuildingQuery {
             } else {
                 fetchedFields.addAll(mapping.getFields());
             }
+            //cuba end
         }
         if ((nestedMapping != null) && nestedMapping.isCollectionMapping()) {
             List<DatabaseField> additionalFields = nestedMapping.getContainerPolicy().getAdditionalFieldsForJoin((CollectionMapping)nestedMapping);
