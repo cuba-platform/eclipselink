@@ -318,6 +318,11 @@ public class AttributeGroup extends CoreAttributeGroup<AttributeItem, ClassDescr
         return (AttributeGroup)super.clone();
     }
 
+    @Override
+    public AttributeGroup cloneWithSameAttributes() {
+        return (AttributeGroup)super.cloneWithSameAttributes();
+    }
+
     /**
      * INTERNAL:
      * Only LoadGroups allow concurrency.
