@@ -452,7 +452,9 @@ public class AggregateObjectMapping extends AggregateMapping implements Relation
             // Set the fetch group to the domain object, after built.
             EntityFetchGroup entityFetchGroup = descriptor.getFetchGroupManager().getEntityFetchGroup(targetFetchGroup);
             if (entityFetchGroup != null) {
-                entityFetchGroup = (EntityFetchGroup)entityFetchGroup.clone();
+                //cuba begin
+                entityFetchGroup = (EntityFetchGroup)entityFetchGroup.cloneWithSameAttributes();
+                //cuba end
                 // begin cuba
                 if (cacheKey != null)
                     entityFetchGroup.setRootEntity((FetchGroupTracker) cacheKey.getObject());

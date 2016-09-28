@@ -219,7 +219,47 @@ public class CoreAttributeGroup<
        Map<CoreAttributeGroup<ATTRIBUTE_ITEM, DESCRIPTOR>, CoreAttributeGroup<ATTRIBUTE_ITEM, DESCRIPTOR>> cloneMap = new IdentityHashMap<CoreAttributeGroup<ATTRIBUTE_ITEM, DESCRIPTOR>, CoreAttributeGroup<ATTRIBUTE_ITEM, DESCRIPTOR>>();
        return clone(cloneMap);
     }
+    //cuba begin
+    public CoreAttributeGroup cloneWithSameAttributes() {
+        Map<CoreAttributeGroup<ATTRIBUTE_ITEM, DESCRIPTOR>, CoreAttributeGroup<ATTRIBUTE_ITEM, DESCRIPTOR>> cloneMap = new IdentityHashMap<CoreAttributeGroup<ATTRIBUTE_ITEM, DESCRIPTOR>, CoreAttributeGroup<ATTRIBUTE_ITEM, DESCRIPTOR>>();
+        return cloneWithSameAttributes(cloneMap);
+    }
 
+    public CoreAttributeGroup cloneWithSameAttributes(Map<CoreAttributeGroup<ATTRIBUTE_ITEM, DESCRIPTOR>, CoreAttributeGroup<ATTRIBUTE_ITEM, DESCRIPTOR>> cloneMap){
+        CoreAttributeGroup clone = cloneMap.get(this);
+        if (clone != null) {
+            return clone;
+        }
+        try {
+            clone = (CoreAttributeGroup) super.clone();
+        } catch (CloneNotSupportedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        clone.name = this.name;
+        clone.type = this.type;
+        clone.typeName = this.typeName;
+        clone.isValidated = this.isValidated;
+        cloneMap.put(this,clone);
+        if (this.allsubclasses != null){
+            for (CoreAttributeGroup group : this.allsubclasses.values()){
+                clone.getSubClassGroups().put(group.getType(), group.cloneWithSameAttributes(cloneMap));
+            }
+        }
+        if (this.superClassGroup != null){
+            clone.superClassGroup = this.superClassGroup.cloneWithSameAttributes(cloneMap);
+        }
+        if (this.subClasses != null){
+            clone.subClasses = new HashSet<CoreAttributeGroup>();
+            for (CoreAttributeGroup group : this.subClasses){
+                clone.subClasses.add(group.cloneWithSameAttributes(cloneMap));
+            }
+        }
+        // all attributes and nested groups should be used by reference
+        clone.items = this.items;
+        return clone;
+    }
+    //cuba end
     /**
      * INTERNAL:
      *    This method is used internally in the clone processing.
