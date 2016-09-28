@@ -56,6 +56,11 @@ public class LoadGroup extends AttributeGroup {
         return (LoadGroup)super.clone();
     }
 
+    @Override
+    public LoadGroup cloneWithSameAttributes() {
+        return (LoadGroup)super.cloneWithSameAttributes();
+    }
+
     /**
      * Returns LoadGroup corresponding to the passed (possibly nested) attribute.
      */
