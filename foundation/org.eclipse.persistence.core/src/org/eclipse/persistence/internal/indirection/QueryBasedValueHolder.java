@@ -20,6 +20,7 @@ import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.internal.sessions.UnitOfWorkImpl;
 import org.eclipse.persistence.mappings.DatabaseMapping;
 import org.eclipse.persistence.mappings.ForeignReferenceMapping;
+import org.eclipse.persistence.mappings.OneToOneMapping;
 import org.eclipse.persistence.queries.ObjectBuildingQuery;
 import org.eclipse.persistence.queries.ObjectLevelReadQuery;
 import org.eclipse.persistence.queries.ReadAllQuery;
@@ -139,13 +140,25 @@ public class QueryBasedValueHolder extends DatabaseValueHolder {
             }
             return session.executeQuery(getQuery(), getRow());
         } else {
-            Boolean prevSoftDeletion = org.eclipse.persistence.internal.helper.CubaUtil.setSoftDeletion(false);
-            try {
+            boolean softDeletionByMapping = false;
+            DatabaseMapping databaseMapping = getQuery().getSourceMapping();
+            if (databaseMapping != null && databaseMapping.isOneToOneMapping()) {
+                OneToOneMapping oneToOneMapping = (OneToOneMapping) databaseMapping;
+                softDeletionByMapping = oneToOneMapping.isSoftDeletionForValueHolder();
+            }
+            if (softDeletionByMapping && org.eclipse.persistence.internal.helper.CubaUtil.isSoftDeletion()) {
                 ReadQuery query = (ReadQuery) getQuery().clone();
                 query.setIsPrepared(false);
                 return session.executeQuery(query, getRow());
-            } finally {
-                org.eclipse.persistence.internal.helper.CubaUtil.setSoftDeletion(prevSoftDeletion);
+            } else {
+                Boolean prevSoftDeletion = org.eclipse.persistence.internal.helper.CubaUtil.setSoftDeletion(false);
+                try {
+                    ReadQuery query = (ReadQuery) getQuery().clone();
+                    query.setIsPrepared(false);
+                    return session.executeQuery(query, getRow());
+                } finally {
+                    org.eclipse.persistence.internal.helper.CubaUtil.setSoftDeletion(prevSoftDeletion);
+                }
             }
         }
         // return session.executeQuery(getQuery(), getRow());
