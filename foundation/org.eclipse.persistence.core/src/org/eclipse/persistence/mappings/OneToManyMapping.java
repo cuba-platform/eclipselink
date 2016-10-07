@@ -29,6 +29,7 @@ import java.util.Vector;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.exceptions.ConversionException;
+import org.eclipse.persistence.internal.expressions.ObjectExpression;
 import org.eclipse.persistence.exceptions.DatabaseException;
 import org.eclipse.persistence.exceptions.DescriptorException;
 import org.eclipse.persistence.exceptions.OptimisticLockException;
@@ -149,6 +150,9 @@ public class OneToManyMapping extends CollectionMapping implements RelationalMap
     protected boolean hasCustomRemoveAllTargetsQuery;
     protected Boolean shouldDeferInserts = null;
 
+    //cuba begin
+    protected Expression additionalJoinCriteria;
+    //cuba end
     /**
      * PUBLIC:
      * Default constructor.
@@ -1693,4 +1697,23 @@ public class OneToManyMapping extends CollectionMapping implements RelationalMap
         insertQuery.setIsExecutionClone(true);
         return insertQuery;
     }
+
+    //cuba begin
+    public void setAdditionalJoinCriteria(Expression expression) {
+        additionalJoinCriteria = expression;
+    }
+
+    @Override
+    public Expression getJoinCriteria(ObjectExpression context, Expression base) {
+        Expression selectionCriteria = getSelectionCriteria();
+        Expression keySelectionCriteria = this.containerPolicy.getKeySelectionCriteria();
+        if (keySelectionCriteria != null) {
+            selectionCriteria = selectionCriteria.and(keySelectionCriteria);
+        }
+        if (additionalJoinCriteria != null) {
+            selectionCriteria = selectionCriteria.and(additionalJoinCriteria);
+        }
+        return context.getBaseExpression().twist(selectionCriteria, base);
+    }
+    //cuba end
 }
