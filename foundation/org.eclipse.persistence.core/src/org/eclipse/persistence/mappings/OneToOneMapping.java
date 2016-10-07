@@ -100,7 +100,11 @@ public class OneToOneMapping extends ObjectReferenceMapping implements Relationa
      */
     protected transient List<Expression> sourceExpressionsToPostInitialize;
     protected transient List<Expression> targetExpressionsToPostInitialize;
-
+    //cuba begin
+    protected boolean softDeletionForBatch = true;
+    protected boolean softDeletionForValueHolder = true;
+    protected Expression additionalJoinCriteria;
+    //cuba end
     /**
      * Mode for writeFromObjectIntoRowInternal method
      */
@@ -2276,4 +2280,49 @@ public class OneToOneMapping extends ObjectReferenceMapping implements Relationa
         }
         return super.getOrderByNormalizedExpressions(base);
     }
+
+    //cuba begin
+    public void setSoftDeletionForBatch(boolean softDeletionForBatch) {
+        this.softDeletionForBatch = softDeletionForBatch;
+    }
+
+    public boolean isSoftDeletionForBatch() {
+        return softDeletionForBatch;
+    }
+
+    public void setSoftDeletionForValueHolder(boolean softDeletionForValueHolder) {
+        this.softDeletionForValueHolder = softDeletionForValueHolder;
+    }
+
+    public boolean isSoftDeletionForValueHolder() {
+        return softDeletionForValueHolder;
+    }
+
+    public void setAdditionalJoinCriteria(Expression expression) {
+        additionalJoinCriteria = expression;
+    }
+
+    @Override
+    public Expression getJoinCriteria(ObjectExpression context, Expression base) {
+        Expression selectionCriteria = getSelectionCriteria();
+        if (additionalJoinCriteria != null) {
+            selectionCriteria = selectionCriteria.and(additionalJoinCriteria);
+        }
+        return context.getBaseExpression().twist(selectionCriteria, base);
+    }
+
+    @Override
+    public ReadQuery prepareNestedBatchQuery(ObjectLevelReadQuery query) {
+        if (!softDeletionForBatch) {
+            Boolean prevSoftDeletion = org.eclipse.persistence.internal.helper.CubaUtil.setSoftDeletion(false);
+            try {
+                return super.prepareNestedBatchQuery(query);
+            } finally {
+                org.eclipse.persistence.internal.helper.CubaUtil.setSoftDeletion(prevSoftDeletion);
+            }
+        } else {
+            return super.prepareNestedBatchQuery(query);
+        }
+    }
+    //cuba end
 }
