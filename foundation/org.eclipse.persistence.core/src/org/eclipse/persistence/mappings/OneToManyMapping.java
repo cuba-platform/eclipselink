@@ -1715,5 +1715,19 @@ public class OneToManyMapping extends CollectionMapping implements RelationalMap
         }
         return context.getBaseExpression().twist(selectionCriteria, base);
     }
+
+    @Override
+    public ReadQuery prepareNestedBatchQuery(ObjectLevelReadQuery query) {
+        if (org.eclipse.persistence.internal.helper.CubaUtil.isOriginalSoftDeletion()) {
+            Boolean prevSoftDeletion = org.eclipse.persistence.internal.helper.CubaUtil.setSoftDeletion(true);
+            try {
+                return super.prepareNestedBatchQuery(query);
+            } finally {
+                org.eclipse.persistence.internal.helper.CubaUtil.setSoftDeletion(prevSoftDeletion);
+            }
+        } else {
+            return super.prepareNestedBatchQuery(query);
+        }
+    }
     //cuba end
 }
