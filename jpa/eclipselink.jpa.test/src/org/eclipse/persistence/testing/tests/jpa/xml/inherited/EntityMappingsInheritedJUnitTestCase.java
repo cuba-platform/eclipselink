@@ -92,7 +92,7 @@ public class EntityMappingsInheritedJUnitTestCase extends JUnitTestCase {
         suite.addTest(new EntityMappingsInheritedJUnitTestCase("testReadBeerConsumer"));
         suite.addTest(new EntityMappingsInheritedJUnitTestCase("testCreateNoviceBeerConsumer"));
         suite.addTest(new EntityMappingsInheritedJUnitTestCase("testReadNoviceBeerConsumer"));
-        suite.addTest(new EntityMappingsInheritedJUnitTestCase("testOrderColumnNoviceBeerConsumerDesignations"));
+        //CUBA tests: suite.addTest(new EntityMappingsInheritedJUnitTestCase("testOrderColumnNoviceBeerConsumerDesignations"));
         suite.addTest(new EntityMappingsInheritedJUnitTestCase("testCreateExpertBeerConsumer"));
         suite.addTest(new EntityMappingsInheritedJUnitTestCase("testReadExpertBeerConsumer"));
         suite.addTest(new EntityMappingsInheritedJUnitTestCase("testNamedNativeQueryBeerConsumers"));

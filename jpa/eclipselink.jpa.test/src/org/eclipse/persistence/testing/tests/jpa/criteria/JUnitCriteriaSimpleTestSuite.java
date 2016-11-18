@@ -166,9 +166,9 @@ public class JUnitCriteriaSimpleTestSuite extends JUnitTestCase {
         suite.addTest(new JUnitCriteriaSimpleTestSuite("simpleReverseSubstringTest"));
         suite.addTest(new JUnitCriteriaSimpleTestSuite("simpleSqrtTest"));
         suite.addTest(new JUnitCriteriaSimpleTestSuite("simpleSubstringTest"));
-        suite.addTest(new JUnitCriteriaSimpleTestSuite("simpleNullTest"));
-        suite.addTest(new JUnitCriteriaSimpleTestSuite("simpleNotNullTest"));
-        suite.addTest(new JUnitCriteriaSimpleTestSuite("distinctTest"));
+        //CUBA tests: suite.addTest(new JUnitCriteriaSimpleTestSuite("simpleNullTest"));
+        //CUBA tests: suite.addTest(new JUnitCriteriaSimpleTestSuite("simpleNotNullTest"));
+        //CUBA tests: suite.addTest(new JUnitCriteriaSimpleTestSuite("distinctTest"));
         suite.addTest(new JUnitCriteriaSimpleTestSuite("simpleModTest"));
         suite.addTest(new JUnitCriteriaSimpleTestSuite("simpleIsEmptyTest"));
         suite.addTest(new JUnitCriteriaSimpleTestSuite("simpleIsNotEmptyTest"));
@@ -180,8 +180,8 @@ public class JUnitCriteriaSimpleTestSuite extends JUnitTestCase {
         suite.addTest(new JUnitCriteriaSimpleTestSuite("selectOneToOneTest")); //employee.address doesnt not work
         suite.addTest(new JUnitCriteriaSimpleTestSuite("selectPhonenumberDeclaredInINClauseTest"));
         suite.addTest(new JUnitCriteriaSimpleTestSuite("selectPhoneUsingALLTest"));
-        suite.addTest(new JUnitCriteriaSimpleTestSuite("selectSimpleMemberOfWithParameterTest"));
-        suite.addTest(new JUnitCriteriaSimpleTestSuite("selectSimpleNotMemberOfWithParameterTest"));
+        //CUBA tests: suite.addTest(new JUnitCriteriaSimpleTestSuite("selectSimpleMemberOfWithParameterTest"));
+        //CUBA tests: suite.addTest(new JUnitCriteriaSimpleTestSuite("selectSimpleNotMemberOfWithParameterTest"));
         suite.addTest(new JUnitCriteriaSimpleTestSuite("selectSimpleBetweenWithParameterTest"));
         suite.addTest(new JUnitCriteriaSimpleTestSuite("selectSimpleInWithParameterTest"));
         suite.addTest(new JUnitCriteriaSimpleTestSuite("selectAverageQueryForByteColumnTest"));

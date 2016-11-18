@@ -79,7 +79,7 @@ public class ComplexAggregateTestSuite extends JUnitTestCase {
         suite.addTest(new ComplexAggregateTestSuite("testNestedAggregate"));
         suite.addTest(new ComplexAggregateTestSuite("testNestedAggregatePrimaryKey"));
         suite.addTest(new ComplexAggregateTestSuite("testAggregateReadOnlyMapKey"));
-        suite.addTest(new ComplexAggregateTestSuite("testComplexAggregateJoin"));
+        //CUBA tests:  suite.addTest(new ComplexAggregateTestSuite("testComplexAggregateJoin"));
         suite.addTest(new ComplexAggregateTestSuite("testComplexAggregateBatch"));
         suite.addTest(new ComplexAggregateTestSuite("testAggregateFieldAttributeOverrides"));
 

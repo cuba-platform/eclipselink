@@ -100,10 +100,6 @@ import org.eclipse.persistence.testing.framework.JoinedAttributeTestHelper;
 import org.eclipse.persistence.testing.framework.QuerySQLTracker;
 import org.eclipse.persistence.testing.framework.junit.JUnitTestCase;
 import org.eclipse.persistence.testing.framework.junit.JUnitTestCaseHelper;
-import org.eclipse.persistence.testing.models.jpa.advanced.Bill;
-import org.eclipse.persistence.testing.models.jpa.advanced.BillLine;
-import org.eclipse.persistence.testing.models.jpa.advanced.BillLineItem;
-import org.eclipse.persistence.testing.models.jpa.advanced.BillAction;
 import org.eclipse.persistence.testing.models.jpa.advanced.Address;
 import org.eclipse.persistence.testing.models.jpa.advanced.AdvancedTableCreator;
 import org.eclipse.persistence.testing.models.jpa.advanced.Bag;
@@ -234,10 +230,10 @@ public class AdvancedJPAJunitTest extends JUnitTestCase {
         suite.addTest(new AdvancedJPAJunitTest("testProperty"));
         
         suite.addTest(new AdvancedJPAJunitTest("testBackpointerOnMerge"));
-                
-        suite.addTest(new AdvancedJPAJunitTest("testUnidirectionalPersist"));
+
+        //CUBA tests: suite.addTest(new AdvancedJPAJunitTest("testUnidirectionalPersist"));
         suite.addTest(new AdvancedJPAJunitTest("testUnidirectionalUpdate"));
-        suite.addTest(new AdvancedJPAJunitTest("testUnidirectionalFetchJoin"));
+        //CUBA tests: suite.addTest(new AdvancedJPAJunitTest("testUnidirectionalFetchJoin"));
         suite.addTest(new AdvancedJPAJunitTest("testUnidirectionalTargetLocking_AddRemoveTarget"));
         suite.addTest(new AdvancedJPAJunitTest("testUnidirectionalTargetLocking_DeleteSource"));
         
@@ -250,7 +246,7 @@ public class AdvancedJPAJunitTest extends JUnitTestCase {
         suite.addTest(new AdvancedJPAJunitTest("testJoinFetchWithRefreshOnRelatedEntity"));
         suite.addTest(new AdvancedJPAJunitTest("testSharedEmbeddedAttributeOverrides"));
         suite.addTest(new AdvancedJPAJunitTest("testTransparentIndirectionValueHolderSessionReset"));
-        suite.addTest(new AdvancedJPAJunitTest("testTransparentIndirectionQuerySessionReset"));
+        //CUBA tests: suite.addTest(new AdvancedJPAJunitTest("testTransparentIndirectionQuerySessionReset"));
         
         if (!isJPA10()) {
             // These tests use JPA 2.0 entity manager API
@@ -3314,157 +3310,6 @@ public class AdvancedJPAJunitTest extends JUnitTestCase {
         }
     }
     
-    /**
-     * Bug 489898 - RepeatableWriteUnitOfWork linked by QueryBasedValueHolder in shared cache in specific scenario
-     * 
-     * Complex scenario: In a transaction, associate an existing object to a new object, refresh the existing object.
-     * In a second transaction, read the new object and traverse relationships to the existing object, and trigger
-     * an indirect relationship. The existing wrapped indirection query on the indirect relationship should 
-     * ensure that the UnitOfWork (RepeatableWriteUnitOfWork) used for the query is unreferenced correctly, to 
-     * avoid referencing it within the shared cache, via the existing referenced query.    
-     */
-    public void testTransparentIndirectionQuerySessionReset() {
-        Bill bill = null;
-        BillLine billLine = null;
-        BillLineItem billLineItem = null;
-        BillAction billAction = null;
-        
-        // setup
-        EntityManager em = createEntityManager();
-        try {
-            beginTransaction(em);
-            
-            bill = new Bill();
-            bill.setOrderIdentifier("Test Bill");
-            
-            billLine = new BillLine();
-            billLine.setQuantity(6);
-            bill.addBillLine(billLine);
-            
-            billLineItem = new BillLineItem();
-            billLineItem.setItemName("Test Widget");
-            billLine.addBillLineItem(billLineItem);
-            
-            em.persist(bill);
-            em.persist(billLine);
-            em.persist(billLineItem);
-            
-            commitTransaction(em);
-            
-            assertNotNull("bill should be non-null", bill);
-            assertNotNull("bill's id should be non-null", bill.getId());
-            assertNotNull("billLine should be non-null", billLine);
-            assertNotNull("billLine's id should be non-null", billLine.getId());
-            assertNotNull("billLineItem should be non-null", billLineItem);
-            assertNotNull("billLineItem's id should be non-null", billLineItem.getId());
-        } finally {
-            closeEntityManager(em);
-            clearCache(); // start test with an empty cache
-        }
-        
-        try {
-            // test - txn #1 : read, modify, persist, refresh related Entity
-            em = createEntityManager();
-            try {
-                beginTransaction(em);
-                
-                Bill billReRead = em.createQuery("SELECT b FROM Bill b where b.id=" + bill.getId(), Bill.class).getSingleResult();
-                assertNotNull(billReRead);
-                BillLine billLineReRead = billReRead.getBillLines().get(0);
-                assertNotNull(billLineReRead);
-                
-                billAction = new BillAction();
-                billAction.setBillLine(billLineReRead);
-                billAction.setPriority(2);
-                
-                em.persist(billAction);
-                
-                em.refresh(billLineReRead); // refresh
-                
-                commitTransaction(em);
-            } finally {
-                if (isTransactionActive(em)) {
-                    rollbackTransaction(em);
-                }
-                closeEntityManager(em);
-            }
-            
-            // test - txn #2 : read, modify and trigger relationship on related Entity
-            em = createEntityManager();
-            try {
-                beginTransaction(em);
-                
-                Bill billReRead = em.createQuery("SELECT b FROM Bill b where b.id=" + bill.getId(), Bill.class).getSingleResult();
-                billReRead.setStatus(Bill.STATUS_PROCESSING); // DM: if there is no update to Order, issue doesn't occur
-                
-                BillAction billActionReRead = em.createQuery("SELECT a FROM BillAction a where a.id=" + billAction.getId(), BillAction.class).getSingleResult();
-                assertNotNull(billActionReRead);
-                
-                BillLine billLineReRead = billActionReRead.getBillLine();
-                assertNotNull(billLineReRead);
-                
-                billLineReRead.getBillLineItems().size(); // Access & trigger BillLine -> BillLineItems list
-                
-                commitTransaction(em);
-            } finally {
-                if (isTransactionActive(em)) {
-                    rollbackTransaction(em);
-                }
-                closeEntityManager(em);
-            }
-            
-            // verify
-            // Failure case: non-null session (a UnitOfWork/RepeatableWriteUnitOfWork) referenced in the wrapped ValueHolder's query.
-            ServerSession srv = getServerSession();
-            ClassDescriptor descriptor = srv.getDescriptor(billLine);
-            Long blId = billLine.getId();
-            
-            BillLine cachedBillLine = (BillLine)srv.getIdentityMapAccessor().getFromIdentityMap(blId, BillLine.class);
-            assertNotNull("BillLine from shared cache is null with id: " + blId, cachedBillLine);
-            
-            OneToManyMapping mapping = (OneToManyMapping)srv.getDescriptor(cachedBillLine).getMappingForAttributeName("billLineItems");
-            IndirectContainer billLineItemsVH = (IndirectContainer) mapping.getAttributeValueFromObject(cachedBillLine);
-            assertNotNull("BillLineItems ValueHolder should not be null", billLineItemsVH);
-            
-            ValueHolderInterface wrappedVH = billLineItemsVH.getValueHolder();
-            assertNotNull("Wrapped ValueHolder should not be null", wrappedVH);
-            
-            if (wrappedVH instanceof QueryBasedValueHolder) {
-                DatabaseQuery query = ((QueryBasedValueHolder)wrappedVH).getQuery();
-                if (query.getSession() != null && query.getSession().isUnitOfWork()) {
-                    fail("UnitOfWork referenced in Query from wrapped QueryBasedValueHolder in shared cache");
-                }
-            }
-        } finally {
-            // reset
-            em = createEntityManager();
-            try {
-                beginTransaction(em);
-                bill = em.find(Bill.class, bill.getId());
-                if (bill != null) {
-                    em.remove(bill);
-                }
-                billLine = em.find(BillLine.class, billLine.getId());
-                if (billLine != null) {
-                    em.remove(billLine);
-                }
-                billLineItem = em.find(BillLineItem.class, billLineItem.getId());
-                if (billLineItem != null) {
-                    em.remove(billLineItem);
-                }
-                if (billAction != null) {
-                    billAction = em.find(BillAction.class, billAction.getId());
-                    if (billAction != null) {
-                        em.remove(billAction);
-                    }
-                }
-                commitTransaction(em);
-            } finally {
-                closeEntityManager(em);
-            }
-        }
-    }
-
     /**
      * Bug 412056 Test batch fetch with size smaller than results in reverse order
      */
