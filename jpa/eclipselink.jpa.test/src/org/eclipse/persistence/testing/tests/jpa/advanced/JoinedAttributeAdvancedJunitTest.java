@@ -464,6 +464,10 @@ public class JoinedAttributeAdvancedJunitTest extends JUnitTestCase {
         internalEmployeeOuterJoinAddressPhoneProjectsTeamLeaderAddressTeamMembersPhones(true);
     }
     protected void internalEmployeeOuterJoinAddressPhoneProjectsTeamLeaderAddressTeamMembersPhones(boolean noBase) {
+        try {
+            Thread.sleep(2000L);
+        } catch (InterruptedException e) {
+        }
         ReadAllQuery query = new ReadAllQuery();
         query.setReferenceClass(Employee.class);
         
