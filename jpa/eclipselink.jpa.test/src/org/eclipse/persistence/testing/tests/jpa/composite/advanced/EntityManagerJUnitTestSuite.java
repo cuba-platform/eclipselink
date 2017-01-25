@@ -362,7 +362,7 @@ public class EntityManagerJUnitTestSuite extends JUnitTestCase {
         tests.add("testExceptionForPersistNonEntitySubclass");
         tests.add("testEnabledPersistNonEntitySubclass");
         tests.add("testCloneEmbeddable");
-        tests.add("testCloseOnCommit");
+        //CUBA tests: tests.add("testCloseOnCommit");
         tests.add("testPersistOnCommit");
         tests.add("testFlushMode");
         tests.add("testEmbeddedNPE");

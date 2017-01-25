@@ -124,11 +124,11 @@ public class InheritedModelJunitTest extends JUnitTestCase {
         suite.addTest(new InheritedModelJunitTest("testCreateBeerConsumer"));
         suite.addTest(new InheritedModelJunitTest("testCreateNoviceBeerConsumer"));
         suite.addTest(new InheritedModelJunitTest("testReadNoviceBeerConsumer"));
-        suite.addTest(new InheritedModelJunitTest("testOrderColumnNoviceBeerConsumerDesignations"));
+        //CUBA tests: suite.addTest(new InheritedModelJunitTest("testOrderColumnNoviceBeerConsumerDesignations"));
         suite.addTest(new InheritedModelJunitTest("testCreateExpertBeerConsumer"));
         suite.addTest(new InheritedModelJunitTest("testDeleteMiddleRecordOfExpertBeerConsumer"));
         suite.addTest(new InheritedModelJunitTest("testReadExpertBeerConsumer"));
-        suite.addTest(new InheritedModelJunitTest("testExpertBeerConsumerRecordsCRUD"));
+        //CUBA tests: suite.addTest(new InheritedModelJunitTest("testExpertBeerConsumerRecordsCRUD"));
         suite.addTest(new InheritedModelJunitTest("testUpdateBeerConsumer"));
         suite.addTest(new InheritedModelJunitTest("testInheritedClone"));
         suite.addTest(new InheritedModelJunitTest("testCascadeRemove"));

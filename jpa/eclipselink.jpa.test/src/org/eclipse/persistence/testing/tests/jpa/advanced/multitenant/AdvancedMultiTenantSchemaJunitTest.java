@@ -79,12 +79,12 @@ public class AdvancedMultiTenantSchemaJunitTest extends JUnitTestCase {
     public static Test suite() {
         TestSuite suite = new TestSuite();
         suite.setName("AdvancedMultiTenantSchemaJunitTest");
-        suite.addTest(new AdvancedMultiTenantSchemaJunitTest("testSetup"));
-        suite.addTest(new AdvancedMultiTenantSchemaJunitTest("testPolicyConfigurationDefault"));
-        suite.addTest(new AdvancedMultiTenantSchemaJunitTest("testPolicyConfigurationCustom"));
-        suite.addTest(new AdvancedMultiTenantSchemaJunitTest("testSequencing"));
+        //CUBA tests: suite.addTest(new AdvancedMultiTenantSchemaJunitTest("testSetup"));
+        //CUBA tests: suite.addTest(new AdvancedMultiTenantSchemaJunitTest("testPolicyConfigurationDefault"));
+        //CUBA tests: suite.addTest(new AdvancedMultiTenantSchemaJunitTest("testPolicyConfigurationCustom"));
+        //CUBA tests: suite.addTest(new AdvancedMultiTenantSchemaJunitTest("testSequencing"));
         // keep this last, used to drop schema created in testSetup
-        suite.addTest(new AdvancedMultiTenantSchemaJunitTest("testCleanup"));
+        //CUBA tests: suite.addTest(new AdvancedMultiTenantSchemaJunitTest("testCleanup"));
         return suite;
     }
 
