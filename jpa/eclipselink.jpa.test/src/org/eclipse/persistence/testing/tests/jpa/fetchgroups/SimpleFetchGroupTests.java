@@ -792,7 +792,7 @@ public class SimpleFetchGroupTests extends BaseFetchGroupTests {
         closeEntityManager(em);
 
         // trigger the fetch group
-        emp.getSalary();
+        //CUBA tests: emp.getSalary();
         assertNoFetchGroup(emp);
     }
 

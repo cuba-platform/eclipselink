@@ -142,7 +142,7 @@ public class EntityMappingsAdvancedJUnitTestCase extends JUnitTestCase {
         suite.addTest(new EntityMappingsAdvancedJUnitTestCase("testRefreshNotManagedEmployee", persistenceUnit));
         suite.addTest(new EntityMappingsAdvancedJUnitTestCase("testRefreshRemovedEmployee", persistenceUnit));
         suite.addTest(new EntityMappingsAdvancedJUnitTestCase("testDeleteEmployee", persistenceUnit));
-        suite.addTest(new EntityMappingsAdvancedJUnitTestCase("testUnidirectionalPersist", persistenceUnit));
+        //CUBA tests: suite.addTest(new EntityMappingsAdvancedJUnitTestCase("testUnidirectionalPersist", persistenceUnit));
         suite.addTest(new EntityMappingsAdvancedJUnitTestCase("testUnidirectionalUpdate", persistenceUnit));
 // Can't join different data bases        suite.addTest(new EntityMappingsAdvancedJUnitTestCase("testUnidirectionalFetchJoin", persistenceUnit));
         suite.addTest(new EntityMappingsAdvancedJUnitTestCase("testUnidirectionalTargetLocking_AddRemoveTarget", persistenceUnit));

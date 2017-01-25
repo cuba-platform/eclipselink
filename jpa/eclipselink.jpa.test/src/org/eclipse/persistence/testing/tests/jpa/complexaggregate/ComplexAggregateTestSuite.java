@@ -9,7 +9,7 @@
  *
  * Contributors:
  *     Oracle - initial API and implementation
- *     03/29/2016-2.6_WAS Will Dazey  
+ *     03/29/2016-2.6_WAS Will Dazey
  *       - 490114: Add testing for PersistenceUnitUtil.getIdentifier with nested embeddables in EmbeddedId class
  ******************************************************************************/
 package org.eclipse.persistence.testing.tests.jpa.complexaggregate;
@@ -98,7 +98,7 @@ public class ComplexAggregateTestSuite extends JUnitTestCase {
         suite.addTest(new ComplexAggregateTestSuite("testNestedAggregate"));
         suite.addTest(new ComplexAggregateTestSuite("testNestedAggregatePrimaryKey"));
         suite.addTest(new ComplexAggregateTestSuite("testAggregateReadOnlyMapKey"));
-        suite.addTest(new ComplexAggregateTestSuite("testComplexAggregateJoin"));
+        //CUBA tests:  suite.addTest(new ComplexAggregateTestSuite("testComplexAggregateJoin"));
         suite.addTest(new ComplexAggregateTestSuite("testComplexAggregateBatch"));
         suite.addTest(new ComplexAggregateTestSuite("testAggregateFieldAttributeOverrides"));
 
@@ -1141,56 +1141,56 @@ public class ComplexAggregateTestSuite extends JUnitTestCase {
             warning("Test depends on weaving and change tracking");
             return;
         }
-        
+
         HockeyPuck puck = null;
         HockeyRink rink = null;
-        
+
         // setup
         clearCache();
-        
+
         EntityManager em = createEntityManager();
         try {
             beginTransaction(em);
-            
+
             puck = new HockeyPuck();
             puck.setId(1);
             puck.setName("MrWraparound");
             puck.getSponsor().setName("ACME Cloud Computing Company, Inc.");
             puck.getSponsor().setSponsorshipValue(1000000);
             em.persist(puck);
-            
+
             commitTransaction(em);
         } finally {
             closeEntityManager(em);
         }
-        
+
         // test
         em = createEntityManager();
         try {
             // 1. invalidate existing Entity in the cache
             JpaHelper.getDatabaseSession(getEntityManagerFactory()).getIdentityMapAccessor().invalidateObject(puck.getId(), HockeyPuck.class);
-            assertFalse("Existing cached HockeyPuck should not be valid", 
+            assertFalse("Existing cached HockeyPuck should not be valid",
                 JpaHelper.getDatabaseSession(getEntityManagerFactory()).getIdentityMapAccessor().isValid(puck.getId(), HockeyPuck.class));
-            
+
             beginTransaction(em);
-            
+
             // 2. create new Entity and persist
             rink = new HockeyRink();
             rink.setId(1);
             em.persist(rink);
-            
+
             // 3. load existing Entity
             puck = em.createQuery("select object(p) from HockeyPuck p where p.id = " + puck.getId(), HockeyPuck.class).getSingleResult();
             assertNotNull("HockeyPuck loaded should not be null", puck);
-            
+
             // 4. associate loaded existing Entity with persisted new Entity
             rink.setPuck(puck);
-            
+
             commitTransaction(em);
         } finally {
             closeEntityManager(em);
         }
-        
+
         // verify, go directly to the shared cache for the parent Entity
         try {
             HockeyPuck cachedPuck = (HockeyPuck)JpaHelper.getDatabaseSession(getEntityManagerFactory()).getIdentityMapAccessor().getFromIdentityMap(puck.getId(), HockeyPuck.class);
@@ -1208,7 +1208,7 @@ public class ComplexAggregateTestSuite extends JUnitTestCase {
             // reset
             em = createEntityManager();
             beginTransaction(em);
-            
+
             if (puck != null) {
                 puck = em.find(HockeyPuck.class, puck.getId());
                 if (puck != null) {
@@ -1221,7 +1221,7 @@ public class ComplexAggregateTestSuite extends JUnitTestCase {
                     em.remove(rink);
                 }
             }
-            
+
             commitTransaction(em);
             closeEntityManager(em);
         }
