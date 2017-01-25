@@ -258,7 +258,7 @@ public class EntityManagerJUnitTestSuite extends JUnitTestCase {
         List<String> tests = new ArrayList<String>();
         tests.add("testEMFTargetServerEnforcing");
         tests.add("testSettingDetachedObject");
-        tests.add("testMultipleExistenceChecksForDetachedObjects");
+        //CUBA tests: tests.add("testMultipleExistenceChecksForDetachedObjects");
         tests.add("testMergeOfEntityWithDetachedReferences");
         tests.add("testClearEntityManagerWithoutPersistenceContext");
         tests.add("testDeadConnectionFailover");
@@ -298,7 +298,7 @@ public class EntityManagerJUnitTestSuite extends JUnitTestCase {
         tests.add("testUpdateAllSmallProjects");
         tests.add("testUpdateAllHugeProjects");
         tests.add("testUpdateAllSpecialHugeProjects");
-        tests.add("testUpdateUsingTempStorageWithParameter");
+        //CUBA tests: tests.add("testUpdateUsingTempStorageWithParameter");
         tests.add("testDeleteAllLargeProjectsWithNullTeamLeader");
         tests.add("testDeleteAllHugeProjectsWithNullTeamLeader");
         tests.add("testDeleteAllSpecialHugeProjectsWithNullTeamLeader");
@@ -412,7 +412,7 @@ public class EntityManagerJUnitTestSuite extends JUnitTestCase {
         tests.add("testGetReference");
         tests.add("testGetReferenceUpdate");
         tests.add("testGetReferenceUsedInUpdate");
-        tests.add("testBadGetReference");
+        //CUBA tests: tests.add("testBadGetReference");
         tests.add("testClassInstanceConverter");
         tests.add("test210280EntityManagerFromPUwithSpaceInNameButNotInPath");
         tests.add("test210280EntityManagerFromPUwithSpaceInPathButNotInName");
@@ -423,7 +423,7 @@ public class EntityManagerJUnitTestSuite extends JUnitTestCase {
         tests.add("testExceptionForPersistNonEntitySubclass");
         tests.add("testEnabledPersistNonEntitySubclass");
         tests.add("testCloneEmbeddable");
-        tests.add("testCloseOnCommit");
+        //CUBA tests: tests.add("testCloseOnCommit");
         tests.add("testPersistOnCommit");
         tests.add("testFlushMode");
         tests.add("testEmbeddedNPE");

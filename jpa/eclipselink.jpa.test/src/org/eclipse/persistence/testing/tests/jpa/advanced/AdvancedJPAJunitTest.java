@@ -109,6 +109,7 @@ import org.eclipse.persistence.sessions.server.ServerSession;
 import org.eclipse.persistence.testing.framework.JoinedAttributeTestHelper;
 import org.eclipse.persistence.testing.framework.QuerySQLTracker;
 import org.eclipse.persistence.testing.framework.junit.JUnitTestCase;
+import org.eclipse.persistence.testing.framework.junit.JUnitTestCaseHelper;
 import org.eclipse.persistence.testing.models.jpa.advanced.Bill;
 import org.eclipse.persistence.testing.models.jpa.advanced.BillLine;
 import org.eclipse.persistence.testing.models.jpa.advanced.BillLineItem;
@@ -259,9 +260,11 @@ public class AdvancedJPAJunitTest extends JUnitTestCase {
 
         suite.addTest(new AdvancedJPAJunitTest("testBackpointerOnMerge"));
 
+        //CUBA tests: suite.addTest(new AdvancedJPAJunitTest("testUnidirectionalPersist"));
+
         suite.addTest(new AdvancedJPAJunitTest("testUnidirectionalPersist"));
         suite.addTest(new AdvancedJPAJunitTest("testUnidirectionalUpdate"));
-        suite.addTest(new AdvancedJPAJunitTest("testUnidirectionalFetchJoin"));
+        //CUBA tests: suite.addTest(new AdvancedJPAJunitTest("testUnidirectionalFetchJoin"));
         suite.addTest(new AdvancedJPAJunitTest("testUnidirectionalTargetLocking_AddRemoveTarget"));
         suite.addTest(new AdvancedJPAJunitTest("testUnidirectionalTargetLocking_DeleteSource"));
 
@@ -273,6 +276,9 @@ public class AdvancedJPAJunitTest extends JUnitTestCase {
         suite.addTest(new AdvancedJPAJunitTest("testAttributeOverrideToMultipleSameDefaultColumnName"));
         suite.addTest(new AdvancedJPAJunitTest("testJoinFetchWithRefreshOnRelatedEntity"));
         suite.addTest(new AdvancedJPAJunitTest("testSharedEmbeddedAttributeOverrides"));
+        suite.addTest(new AdvancedJPAJunitTest("testTransparentIndirectionValueHolderSessionReset"));
+        //CUBA tests: suite.addTest(new AdvancedJPAJunitTest("testTransparentIndirectionQuerySessionReset"));
+        
 
         suite.addTest(new AdvancedJPAJunitTest("testEmployeeToProjectWithBatchFetchTypeInReverseIteration"));
         suite.addTest(new AdvancedJPAJunitTest("testEmployeeToProjectWithBatchFetchTypeInCustomIteration"));
@@ -299,7 +305,7 @@ public class AdvancedJPAJunitTest extends JUnitTestCase {
 
             suite.addTest(new AdvancedJPAJunitTest("testQueryJoinBasicCollectionTableUsingQueryResultsCache"));
             suite.addTest(new AdvancedJPAJunitTest("testNullValueInCollectionWithOrderColumn"));
-            
+
             // Bug 453865
             suite.addTest(new AdvancedJPAJunitTest("testJoinWithOrderByOnElementCollectionList"));
             suite.addTest(new AdvancedJPAJunitTest("testJoinWithOrderByOnElementCollectionMap"));
@@ -3709,61 +3715,61 @@ public class AdvancedJPAJunitTest extends JUnitTestCase {
 
     /**
      * Bug 502085 - @OneToMany with @OrderColumn contains a null element after specific scenario
-     * 
+     *
      */
     public void testNullValueInCollectionWithOrderColumn() {
         // Create test data
         EntityManager em = createEntityManager();
         beginTransaction(em);
-        
+
         OrderedEntityA newEntityA1 = new OrderedEntityA(1L, "Entity-A1");
         OrderedEntityA newEntityA2 = null; // save for later
         OrderedEntityZ newEntityZ1 = new OrderedEntityZ(1L, "Entity-Z1");
         OrderedEntityZ newEntityZ2 = new OrderedEntityZ(2L, "Entity-Z2");
         newEntityZ1.addEntityA(newEntityA1);
-        
+
         em.persist(newEntityA1);
         em.persist(newEntityZ1);
         em.persist(newEntityZ2);
-        
+
         commitTransaction(em);
         closeEntityManager(em);
-        
+
         try {
             // Test
             em = createEntityManager();
             beginTransaction(em);
-            
+
             // load Entity Z2 for unrelated modification within same EM
             OrderedEntityZ entityZ2 = em.createQuery("SELECT z FROM OrderedEntityZ z WHERE z.id = 2", OrderedEntityZ.class).getSingleResult();
             entityZ2.setDescription("Entity-Z2-MODIFIED"); // make a change
             em.persist(entityZ2); // important to persist modification first
-            
+
             // load Entity Z1 for modification
             OrderedEntityZ entityZ1 = em.createQuery("SELECT z FROM OrderedEntityZ z WHERE z.id = 1", OrderedEntityZ.class).getSingleResult();
-            
+
             // Remove A1 from collection, add A2 to collection, persist
             entityZ1.removeEntityA(entityZ1.getEntityAs().get(0));
             newEntityA2 = new OrderedEntityA(2L, "Entity-A2");
             entityZ1.addEntityA(newEntityA2);
-            
+
             em.persist(newEntityA2);
-            
+
             commitTransaction(em);
             closeEntityManager(em);
-            
+
             // Verify
             em = createEntityManager();
-            
+
             entityZ1 = em.createQuery("SELECT z FROM OrderedEntityZ z WHERE z.id = 1", OrderedEntityZ.class).getSingleResult();
             List<OrderedEntityA> entityAList = entityZ1.getEntityAs();
-            
+
             // validate that Entity Z1's collection is size 1 and contains a valid Entity A2 with correct description
             assertEquals("invalid collection size", 1, entityAList.size());
             OrderedEntityA firstEntityA = entityAList.get(0);
             assertNotNull("null value in collection", firstEntityA);
             assertEquals("wrong description in entity", newEntityA2.getDescription(), firstEntityA.getDescription());
-            
+
             closeEntityManager(em);
         } finally {
             if (em != null && em.isOpen()) {
@@ -3772,7 +3778,7 @@ public class AdvancedJPAJunitTest extends JUnitTestCase {
             // clean up
             em = createEntityManager();
             beginTransaction(em);
-            
+
             newEntityA1 = em.find(OrderedEntityA.class, newEntityA1.getId());
             if (newEntityA1 != null) {
                 em.remove(newEntityA1);
@@ -3791,7 +3797,7 @@ public class AdvancedJPAJunitTest extends JUnitTestCase {
             if (newEntityZ2 != null) {
                 em.remove(newEntityZ2);
             }
-            
+
             commitTransaction(em);
             closeEntityManager(em);
         }
@@ -3812,7 +3818,7 @@ public class AdvancedJPAJunitTest extends JUnitTestCase {
             closeEntityManager(em);
         }
     }
-    
+
     /**
      * Bug 453865
      * Test joining across an @ElementCollection (Map collection implementation) with an ORDER BY clause.
@@ -3828,7 +3834,7 @@ public class AdvancedJPAJunitTest extends JUnitTestCase {
             closeEntityManager(em);
         }
     }
-    
+
     protected int getVersion(EntityManager em, Dealer dealer) {
         Vector pk = new Vector(1);
         pk.add(dealer.getId());

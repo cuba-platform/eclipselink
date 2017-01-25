@@ -157,7 +157,7 @@ public class EntityManagerJUnitTestSuite extends JUnitTestCase {
         tests.add("testWeaving");
         tests.add("testClearEntityManagerWithoutPersistenceContext");
         tests.add("testUpdateAllProjects");
-        tests.add("testUpdateUsingTempStorage");
+        //CUBA tests: tests.add tests.add("testUpdateUsingTempStorage");
         tests.add("testSequenceObjectDefinition");
         tests.add("testFindDeleteAllPersist");
         tests.add("testExtendedPersistenceContext");
@@ -186,7 +186,7 @@ public class EntityManagerJUnitTestSuite extends JUnitTestCase {
         tests.add("testUpdateAllSmallProjectsWithName");
         tests.add("testUpdateAllLargeProjects");
         tests.add("testUpdateAllSmallProjects");
-        tests.add("testUpdateUsingTempStorageWithParameter");
+        //CUBA tests: tests.add("testUpdateUsingTempStorageWithParameter");
         tests.add("testDeleteAllLargeProjectsWithNullTeamLeader");
         tests.add("testDeleteAllSmallProjectsWithNullTeamLeader");
         tests.add("testDeleteAllProjectsWithNullTeamLeader");
