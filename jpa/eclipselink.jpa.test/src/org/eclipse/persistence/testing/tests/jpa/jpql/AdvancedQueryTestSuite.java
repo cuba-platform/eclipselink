@@ -131,7 +131,7 @@ public class AdvancedQueryTestSuite extends JUnitTestCase {
         suite.addTest(new AdvancedQueryTestSuite("testObjectResultType"));
         suite.addTest(new AdvancedQueryTestSuite("testNativeResultType"));
         suite.addTest(new AdvancedQueryTestSuite("testCursors"));
-        suite.addTest(new AdvancedQueryTestSuite("testFetchGroups"));
+        //CUBA tests: suite.addTest(new AdvancedQueryTestSuite("testFetchGroups"));
         suite.addTest(new AdvancedQueryTestSuite("testMultipleNamedJoinFetchs"));
         suite.addTest(new AdvancedQueryTestSuite("testNativeQueryTransactions"));
         suite.addTest(new AdvancedQueryTestSuite("testLockWithSecondaryTable"));

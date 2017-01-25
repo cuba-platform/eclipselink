@@ -1,8 +1,59 @@
 group = 'com.haulmont.thirdparty'
-version = '2.6.2.cuba11'
+version = '2.6.2.cuba12'
+
+def repositoryUrl = 'http://repository.haulmont.com:8587/nexus/content'
+def repositoryUser = System.getenv('HAULMONT_REPOSITORY_USER')
+def repositoryPassword = System.getenv('HAULMONT_REPOSITORY_PASSWORD')
+
+def uploadUrl = project.hasProperty('uploadUrl') ? project.uploadUrl : "${repositoryUrl}/repositories/thirdparty"
+def uploadUser = project.hasProperty('uploadUser') ? project.uploadUser : repositoryUser
+def uploadPassword = project.hasProperty('uploadPassword') ? project.uploadPassword : repositoryPassword
+
+repositories {
+    mavenLocal()
+    maven {
+        credentials {
+            username repositoryUser
+            password repositoryPassword
+        }
+        url "${repositoryUrl}/groups/work"
+    }
+}
 
 apply plugin: 'maven'
 apply plugin: 'maven-publish'
+
+configurations {
+    junitAnt
+	junitTasksAnt
+	jdbcDriver
+	deployerJars
+}
+
+dependencies {
+	deployerJars 'org.apache.maven.wagon:wagon-http:1.0-beta-2'
+    junitAnt ('junit:junit:4.12') {
+		transitive = false;
+	}
+    junitTasksAnt('org.apache.ant:ant-junit:1.9.3') {
+        transitive = false;
+    }
+	jdbcDriver('mysql:mysql-connector-java:5.1.39') {
+		transitive = false;
+	}
+}
+
+ant.properties['junit.lib'] = configurations.junitAnt.asPath
+ant.properties['jdbc.driver.jar'] = configurations.jdbcDriver.asPath
+ant.properties['db.driver'] = 'com.mysql.jdbc.Driver'
+ant.properties['db.url'] = 'jdbc:mysql://localhost/eclipselink?useSSL=false'
+ant.properties['db.user'] = 'root'
+ant.properties['db.pwd'] = 'root'
+
+ant.taskdef(name: 'junit', classname: 'org.apache.tools.ant.taskdefs.optional.junit.JUnitTask',
+             classpath: configurations.junitTasksAnt.asPath)
+ant.taskdef(name: 'junitreport', classname: 'org.apache.tools.ant.taskdefs.optional.junit.XMLResultAggregator',
+             classpath: configurations.junitTasksAnt.asPath)			 
 
 ant.importBuild('antbuild.xml') { antTargetName ->
     'ant-' + antTargetName
@@ -36,33 +87,6 @@ task buildJar(type: Jar, dependsOn: unpackManifest) {
 artifacts {
     archives buildJar 
     archives buildSourceJar
-}
-
-def repositoryUrl = 'http://repository.haulmont.com:8587/nexus/content'
-def repositoryUser = System.getenv('HAULMONT_REPOSITORY_USER')
-def repositoryPassword = System.getenv('HAULMONT_REPOSITORY_PASSWORD')
-
-def uploadUrl = project.hasProperty('uploadUrl') ? project.uploadUrl : "${repositoryUrl}/repositories/thirdparty"
-def uploadUser = project.hasProperty('uploadUser') ? project.uploadUser : repositoryUser
-def uploadPassword = project.hasProperty('uploadPassword') ? project.uploadPassword : repositoryPassword
-
-configurations {
-    deployerJars
-}
-
-dependencies {
-    deployerJars(group: 'org.apache.maven.wagon', name: 'wagon-http', version: '1.0-beta-2')
-}
-
-repositories {
-    mavenLocal()
-    maven {
-        credentials {
-            username repositoryUser
-            password repositoryPassword
-        }
-        url "${repositoryUrl}/groups/work"
-    }
 }
 
 uploadArchives.configure {

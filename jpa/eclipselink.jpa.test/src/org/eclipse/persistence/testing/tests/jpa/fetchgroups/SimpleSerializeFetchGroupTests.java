@@ -93,7 +93,7 @@ public class SimpleSerializeFetchGroupTests extends BaseFetchGroupTests {
             suite.addTest(new SimpleSerializeFetchGroupTests("findMinimalFetchGroup"));
             suite.addTest(new SimpleSerializeFetchGroupTests("findEmptyFetchGroup_setUnfetchedSalary"));
             suite.addTest(new SimpleSerializeFetchGroupTests("verifyUnfetchedAttributes"));
-            suite.addTest(new SimpleSerializeFetchGroupTests("simpleSerializeAndMerge"));
+            //CUBA tests: suite.addTest(new SimpleSerializeFetchGroupTests("simpleSerializeAndMerge"));
             suite.addTest(new SimpleSerializeFetchGroupTests("partialMerge"));
             suite.addTest(new SimpleSerializeFetchGroupTests("copyGroupObjectGraph"));
             suite.addTest(new SimpleSerializeFetchGroupTests("copyGroupMerge"));
