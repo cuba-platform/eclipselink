@@ -776,6 +776,13 @@ public class AggregateObjectMapping extends AggregateMapping implements Relation
         setAttributeValueInObject(clone, clonedAttributeValue);
     }
 
+    //cuba begin
+    @Override
+    public void buildCloneFromRow(AbstractRecord databaseRow, JoinedAttributeManager joinManager, Object clone, CacheKey sharedCacheKey, ObjectBuildingQuery sourceQuery, UnitOfWorkImpl unitOfWork, AbstractSession executionSession, boolean lookupField) {
+        buildCloneFromRow(databaseRow, joinManager, clone, sharedCacheKey, sourceQuery, unitOfWork, executionSession);
+    }
+    //cuba end
+
     /**
      * INTERNAL:
      * Builds a shallow original object.  Only direct attributes and primary
