@@ -363,6 +363,13 @@ public abstract class DynamicEntityImpl implements DynamicEntity, PersistenceEnt
                 UnitOfWorkImpl unitOfWork, AbstractSession executionSession) {
         }
 
+        //cuba begin
+        @Override
+        public void buildCloneFromRow(AbstractRecord databaseRow, JoinedAttributeManager joinManager, Object clone, CacheKey sharedCacheKey, ObjectBuildingQuery sourceQuery, UnitOfWorkImpl unitOfWork, AbstractSession executionSession, boolean lookupField) {
+            buildCloneFromRow(databaseRow, joinManager, clone, sharedCacheKey, sourceQuery, unitOfWork, executionSession);
+        }
+        //cuba end
+
         /* (non-Javadoc)
          * @see org.eclipse.persistence.mappings.DatabaseMapping#cascadePerformRemoveIfRequired(java.lang.Object, org.eclipse.persistence.internal.sessions.UnitOfWorkImpl, java.util.Map)
          */
