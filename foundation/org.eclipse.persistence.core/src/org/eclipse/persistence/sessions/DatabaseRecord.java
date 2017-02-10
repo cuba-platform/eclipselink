@@ -74,4 +74,35 @@ public class DatabaseRecord extends AbstractRecord {
     public DatabaseRecord(Vector fields, Vector values, int size) {
         super(fields, values, size);
     }
+
+    //cuba begin
+    /**
+     * INTERNAL:
+     * Retrieve the value for the field. If missing null is returned.
+     */
+    public Object get(DatabaseField key, boolean lookupField) {
+        // PERF: Direct variable access.
+        // ** Code duplicated in getIndicatingNoEntry, replaceAt ensure kept in synch **
+        // Optimize check.
+        int index = key.index;
+        if (!lookupField) {
+            if ((index >= 0) && (index < this.size)) {
+                DatabaseField field = this.fields.get(index);
+                if ((field == key) || field.equals(key)) {
+                    return this.values.get(index);
+                }
+            }
+        }
+        int fieldsIndex = this.fields.indexOf(key);
+        if (fieldsIndex >= 0) {
+            // PERF: If the fields index was not set, then set it.
+            if (index == -1) {
+                key.setIndex(fieldsIndex);
+            }
+            return this.values.get(fieldsIndex);
+        } else {
+            return null;
+        }
+    }
+    //cuba end
 }

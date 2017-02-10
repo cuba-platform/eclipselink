@@ -210,6 +210,26 @@ public abstract class AbstractDirectMapping extends AbstractColumnMapping implem
         setAttributeValueInObject(clone, attributeValue);
     }
 
+    //cuba begin
+    /**
+     * INTERNAL:
+     * Extract value from the row and set the attribute to this value in the
+     * working copy clone.
+     * In order to bypass the shared cache when in transaction a UnitOfWork must
+     * be able to populate working copies directly from the row.
+     */
+    @Override
+    public void buildCloneFromRow(AbstractRecord databaseRow, JoinedAttributeManager joinManager, Object clone, CacheKey sharedCacheKey, ObjectBuildingQuery sourceQuery, UnitOfWorkImpl unitOfWork, AbstractSession executionSession, boolean lookupField) {
+        // Even though the correct value may exist on the original, we can't
+        // make that assumption.  It is easy to just build it again from the
+        // row even if copy policy already copied it.
+        // That optimization is lost.
+        Object attributeValue = valueFromRow(databaseRow, joinManager, sourceQuery, sharedCacheKey, executionSession, true, null, lookupField);
+
+        setAttributeValueInObject(clone, attributeValue);
+    }
+    //cuba end
+
     /**
      * INTERNAL:
      * Clone the attribute from the original and assign it to the clone.
@@ -1180,6 +1200,7 @@ public abstract class AbstractDirectMapping extends AbstractColumnMapping implem
         readFromRowIntoObject(databaseRow, null, original, null, query, executionSession, true);
     }
 
+    //cuba begin
     /**
      * INTERNAL:
      * Return the mapping's attribute value from the row.
@@ -1189,6 +1210,17 @@ public abstract class AbstractDirectMapping extends AbstractColumnMapping implem
      */
     @Override
     public Object valueFromRow(AbstractRecord row, JoinedAttributeManager joinManager, ObjectBuildingQuery query, CacheKey cacheKey, AbstractSession executionSession, boolean isTargetProtected, Boolean[] wasCacheUsed) {
+        return valueFromRow(row, joinManager, query, cacheKey, executionSession, isTargetProtected, wasCacheUsed, false);
+    }
+
+    /**
+     * INTERNAL:
+     * Return the mapping's attribute value from the row.
+     * The execution session is passed for the case of building a UnitOfWork clone
+     * directly from a row, the session set in the query will not know which platform to use
+     * for converting the value.  Allows the correct session to be passed in.
+     */
+    public Object valueFromRow(AbstractRecord row, JoinedAttributeManager joinManager, ObjectBuildingQuery query, CacheKey cacheKey, AbstractSession executionSession, boolean isTargetProtected, Boolean[] wasCacheUsed, boolean lookupField) {
         if (this.descriptor.getCachePolicy().isProtectedIsolation()) {
             if (this.isCacheable && isTargetProtected && cacheKey != null && cacheKey.getInvalidationState() != CacheKey.CACHE_KEY_INVALID) {
                 Object cached = cacheKey.getObject();
@@ -1205,11 +1237,12 @@ public abstract class AbstractDirectMapping extends AbstractColumnMapping implem
             return getAttributeValueFromObject(row.getSopObject());
         }
         // PERF: Direct variable access.
-        Object fieldValue = row.get(getField());
+        Object fieldValue = row.get(getField(), lookupField);
         Object attributeValue = getObjectValue(fieldValue, executionSession);
 
         return attributeValue;
     }
+    //cuba end
 
     /**
      * INTERNAL:
