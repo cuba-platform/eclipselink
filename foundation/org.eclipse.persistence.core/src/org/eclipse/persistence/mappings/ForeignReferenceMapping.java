@@ -358,6 +358,13 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
         }
     }
 
+    //cuba begin
+    @Override
+    public void buildCloneFromRow(AbstractRecord databaseRow, JoinedAttributeManager joinManager, Object clone, CacheKey sharedCacheKey, ObjectBuildingQuery sourceQuery, UnitOfWorkImpl unitOfWork, AbstractSession executionSession, boolean lookupField) {
+        buildCloneFromRow(databaseRow, joinManager, clone, sharedCacheKey, sourceQuery, unitOfWork, executionSession);
+    }
+    //cuba end
+
     /**
      * INTERNAL:
      * Require for cloning, the part must be cloned.
@@ -1295,7 +1302,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
     @Override
     public void initialize(AbstractSession session) throws DescriptorException {
         super.initialize(session);
-        //474752 : InitializeReferenceDescriptor before 
+        //474752 : InitializeReferenceDescriptor before
         //addMappingsPostCalculateChanges
         initializeReferenceDescriptor(session);
         if (this.isPrivateOwned && (this.descriptor != null)) {

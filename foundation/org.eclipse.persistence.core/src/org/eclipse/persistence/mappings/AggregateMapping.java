@@ -174,6 +174,13 @@ public abstract class AggregateMapping extends DatabaseMapping {
         setAttributeValueInObject(clone, cloneAttributeValue);
     }
 
+    //cuba begin
+    @Override
+    public void buildCloneFromRow(AbstractRecord databaseRow, JoinedAttributeManager joinManager, Object clone, CacheKey sharedCacheKey, ObjectBuildingQuery sourceQuery, UnitOfWorkImpl unitOfWork, AbstractSession executionSession, boolean lookupField) {
+        buildCloneFromRow(databaseRow, joinManager, clone, sharedCacheKey, sourceQuery, unitOfWork, executionSession);
+    }
+    //cuba end
+
     /**
      * INTERNAL:
      * Build and return a clone of the attribute.

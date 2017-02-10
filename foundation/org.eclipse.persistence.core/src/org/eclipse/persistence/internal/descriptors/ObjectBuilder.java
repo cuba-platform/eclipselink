@@ -2035,7 +2035,7 @@ public class ObjectBuilder extends CoreObjectBuilder<AbstractRecord, AbstractSes
         for (int index = 0; index < size; index++) {
             DatabaseMapping mapping = (DatabaseMapping)mappings.get(index);
             if (readAllMappings || query.shouldReadMapping(mapping, executionFetchGroup)) {
-                mapping.buildCloneFromRow(databaseRow, joinManager, clone, sharedCacheKey, query, unitOfWork, unitOfWork);
+                mapping.buildCloneFromRow(databaseRow, joinManager, clone, sharedCacheKey, query, unitOfWork, unitOfWork, !readAllMappings);
             }
         }
 
