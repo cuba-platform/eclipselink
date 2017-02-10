@@ -152,6 +152,12 @@ public class ArrayRecord extends DatabaseRecord {
         }
     }
 
+    //cuba begin
+    public Object get(DatabaseField key, boolean lookupField) {
+        return get(key);
+    }
+    //cuba end
+
     /**
      * INTERNAL:
      * Retrieve the value for the field. If missing DatabaseRow.noEntry is returned.

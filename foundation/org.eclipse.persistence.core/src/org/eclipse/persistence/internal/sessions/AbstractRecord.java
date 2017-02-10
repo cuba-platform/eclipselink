@@ -308,6 +308,14 @@ public abstract class AbstractRecord extends CoreAbstractRecord implements Recor
         }
     }
 
+    //cuba begin
+    /**
+     * INTERNAL:
+     * Retrieve the value for the field. If missing null is returned.
+     */
+    public abstract Object get(DatabaseField key, boolean lookupField);
+    //cuba end
+
     //----------------------------------------------------------------------------//
     public Object getValues(DatabaseField key) {
         return get(key);
