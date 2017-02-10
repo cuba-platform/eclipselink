@@ -88,6 +88,13 @@ public class MultitenantPrimaryKeyMapping extends AbstractColumnMapping {
         // Mapping is write only so nothing to do.
     }
 
+    //cuba begin
+    @Override
+    public void buildCloneFromRow(AbstractRecord databaseRow, JoinedAttributeManager joinManager, Object clone, CacheKey sharedCacheKey, ObjectBuildingQuery sourceQuery, UnitOfWorkImpl unitOfWork, AbstractSession executionSession, boolean lookupField) {
+        buildCloneFromRow(databaseRow, joinManager, clone, sharedCacheKey, sourceQuery, unitOfWork, executionSession);
+    }
+    //cuba end
+
     /**
      * INTERNAL:
      * Compare the clone and backup clone values and return a change record if

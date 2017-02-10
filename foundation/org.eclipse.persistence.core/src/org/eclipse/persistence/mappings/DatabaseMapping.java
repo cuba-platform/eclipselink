@@ -260,6 +260,27 @@ public abstract class DatabaseMapping extends CoreMapping<AttributeAccessor, Abs
      */
     public abstract void buildCloneFromRow(AbstractRecord databaseRow, JoinedAttributeManager joinManager, Object clone, CacheKey sharedCacheKey, ObjectBuildingQuery sourceQuery, UnitOfWorkImpl unitOfWork, AbstractSession executionSession);
 
+    //cuba begin
+    /**
+     * INTERNAL:
+     * A combination of readFromRowIntoObject and buildClone.
+     * <p>
+     * buildClone assumes the attribute value exists on the original and can
+     * simply be copied.
+     * <p>
+     * readFromRowIntoObject assumes that one is building an original.
+     * <p>
+     * Both of the above assumptions are false in this method, and actually
+     * attempts to do both at the same time.
+     * <p>
+     * Extract value from the row and set the attribute to this value in the
+     * working copy clone.
+     * In order to bypass the shared cache when in transaction a UnitOfWork must
+     * be able to populate working copies directly from the row.
+     */
+    public abstract void buildCloneFromRow(AbstractRecord databaseRow, JoinedAttributeManager joinManager, Object clone, CacheKey sharedCacheKey, ObjectBuildingQuery sourceQuery, UnitOfWorkImpl unitOfWork, AbstractSession executionSession, boolean lookupField);
+    //cuba end
+
     /**
      * INTERNAL:
      * Builds a shallow original object.  Only direct attributes and primary
