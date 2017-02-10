@@ -106,6 +106,12 @@ public class EISMappedRecord extends AbstractRecord {
         return getRecord().get(key);
     }
 
+    //cuba begin
+    public Object get(DatabaseField key, boolean lookupField) {
+        return get(key);
+    }
+    //cuba end
+
     /**
      * Forward the request to the record.
      * Wrapped nested records and collections to SDKFieldValues.

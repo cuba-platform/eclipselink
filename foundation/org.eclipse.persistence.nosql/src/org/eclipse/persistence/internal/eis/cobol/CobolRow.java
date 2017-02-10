@@ -66,4 +66,10 @@ public class CobolRow extends DatabaseRecord {
         }
         return value;
     }
+
+    //cuba begin
+    public Object get(DatabaseField key, boolean lookupField) {
+        return get(key);
+    }
+    //cuba end
 }

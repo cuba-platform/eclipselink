@@ -173,6 +173,13 @@ public class XMLChoiceCollectionMapping extends DatabaseMapping implements Choic
         throw DescriptorException.invalidMappingOperation(this, "buildCloneFromRow");
     }
 
+    //cuba begin
+    @Override
+    public void buildCloneFromRow(AbstractRecord databaseRow, JoinedAttributeManager joinManager, Object clone, CacheKey sharedCacheKey, ObjectBuildingQuery sourceQuery, UnitOfWorkImpl unitOfWork, AbstractSession executionSession, boolean lookupField) {
+        buildCloneFromRow(databaseRow, joinManager, clone, sharedCacheKey, sourceQuery, unitOfWork, executionSession);
+    }
+    //cuba end
+
     /**
      * INTERNAL:
      * Cascade perform delete through mappings that require the cascade

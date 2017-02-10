@@ -151,6 +151,12 @@ public class ArrayRecord extends DatabaseRecord {
             return super.get(key);
         }
     }
+
+    //cuba begin
+    public Object get(DatabaseField key, boolean lookupField) {
+        return get(key);
+    }
+    //cuba end
     
     /**
      * INTERNAL:

@@ -141,6 +141,13 @@ public abstract class AbstractCompositeDirectCollectionMapping extends DatabaseM
         setAttributeValueInObject(clone, cloneAttributeValue);
     }
 
+    //cuba begin
+    @Override
+    public void buildCloneFromRow(AbstractRecord databaseRow, JoinedAttributeManager joinManager, Object clone, CacheKey sharedCacheKey, ObjectBuildingQuery sourceQuery, UnitOfWorkImpl unitOfWork, AbstractSession executionSession, boolean lookupField) {
+        buildCloneFromRow(databaseRow, joinManager, clone, sharedCacheKey, sourceQuery, unitOfWork, executionSession);
+    }
+    //cuba end
+
     /**
      * Build and return a clone of the specified attribute value.
      */

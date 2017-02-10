@@ -37,6 +37,12 @@ public class EmptyRecord extends DatabaseRecord {
     protected EmptyRecord() {
         super(0);
     }
+
+    //cuba begin
+    public Object get(DatabaseField key, boolean lookupField) {
+        return get(key);
+    }
+    //cuba end
     
     /**
      * Need to return a real record.

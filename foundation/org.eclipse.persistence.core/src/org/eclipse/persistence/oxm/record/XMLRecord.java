@@ -75,6 +75,12 @@ public abstract class XMLRecord extends AbstractRecord implements AbstractMarsha
         return get(new XMLField(key));
     }
 
+    //cuba begin
+    public Object get(DatabaseField key, boolean lookupField) {
+        return get(key);
+    }
+    //cuba end
+
     /**
      * PUBLIC:
      * Add the field-value pair to the row.
