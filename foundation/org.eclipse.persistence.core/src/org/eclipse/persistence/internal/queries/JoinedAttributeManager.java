@@ -13,13 +13,7 @@
 package org.eclipse.persistence.internal.queries;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Vector;
+import java.util.*;
 
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.exceptions.QueryException;
@@ -770,14 +764,13 @@ public class JoinedAttributeManager implements Cloneable, Serializable {
     public void prepareJoinExpressions(AbstractSession session) {
         // The prepareJoinExpression check for outer-joins to set this to true.
         setIsOuterJoinedAttributeQuery(false);
-        Expression lastJoinedAttributeBaseExpression = null;
-        List groupedExpressionList = new ArrayList(getJoinedAttributeExpressions().size());
+        ExpressionGroups expressionGroups = new ExpressionGroups(getJoinedAttributeExpressions());
         for (int index = 0; index < getJoinedAttributeExpressions().size(); index++) {
             Expression expression = getJoinedAttributeExpressions().get(index);
             expression = prepareJoinExpression(expression, session);
-            //EL bug 307497: break base expressions out onto the list and sort/group expressions by base expression
-            lastJoinedAttributeBaseExpression = addExpressionAndBaseToGroupedList(expression, groupedExpressionList, lastJoinedAttributeBaseExpression);
+            expressionGroups.add(expression);
         }
+        List groupedExpressionList = expressionGroups.toGroupedList();
         //use the grouped list instead of the original
         this.setJoinedAttributeExpressions_(groupedExpressionList);
         for (int index = 0; index < getJoinedMappingExpressions().size(); index++) {
@@ -798,10 +791,9 @@ public class JoinedAttributeManager implements Cloneable, Serializable {
     protected Expression addExpressionAndBaseToGroupedList(Expression expression, List expressionlist, Expression lastJoinedAttributeBaseExpression){
         if(!expressionlist.contains(expression)) {
             int baseExpressionIndex = -1;
-            Expression baseExpression = null;
             boolean sameBase = false;//better than using instanceof BaseExpression.  If its not an objectExpression, it will get an exception in prepare anyway
             if((expression.isObjectExpression())) {
-                baseExpression = ((BaseExpression)expression).getBaseExpression();
+                Expression baseExpression = ((BaseExpression)expression).getBaseExpression();
                 //filter out aggregate expressions between this and the next node.
                 while (!baseExpression.isExpressionBuilder() && ((QueryKeyExpression)baseExpression).getMapping().isAggregateMapping()){
                     baseExpression = ((BaseExpression)baseExpression).getBaseExpression();
@@ -827,9 +819,6 @@ public class JoinedAttributeManager implements Cloneable, Serializable {
             } else {
                 //Add attributeExpression at baseExpressionIndex + 1.
                 expressionlist.add(baseExpressionIndex+1, expression);
-                if (!sameBase) {
-                    lastJoinedAttributeBaseExpression = baseExpression;
-                }
             }
         }
         return lastJoinedAttributeBaseExpression;
@@ -1190,4 +1179,122 @@ public class JoinedAttributeManager implements Cloneable, Serializable {
     public void setJoinedMappingQueryClones(Map joinedMappingQueryClones) {
         this.joinedMappingQueryClones = joinedMappingQueryClones;
     }
+
+    //cuba begin
+    /**
+     * Adds expression and its base expressions recursively to the expressionList in groups,
+     * so that an expression is never listed before its base expression
+     */
+    protected class ExpressionGroups {
+        protected List<ExpressionNode> roots = new ArrayList<>();
+        protected Map<Expression, ExpressionNode> index = new HashMap<>();
+        protected List<Expression> initialExpressions;
+
+        public ExpressionGroups(List<Expression> initialExpressions) {
+            this.initialExpressions = initialExpressions;
+        }
+
+        public void add(Expression expression) {
+            if (!contains(expression)) {
+                if (expression.isObjectExpression()) {
+                    Expression baseExpression = resolveBaseExpression(expression);
+                    if (baseExpression != null && !baseExpression.isExpressionBuilder()) {
+                        add(baseExpression);
+                        ExpressionNode baseNode = findExpressionNode(baseExpression);
+                        ExpressionNode node = new ExpressionNode(expression, indexOfExpression(expression));
+                        baseNode.addChild(node);
+                        index.put(expression, node);
+                    } else {
+                        ExpressionNode node = new ExpressionNode(expression, indexOfExpression(expression));
+                        roots.add(node);
+                        index.put(expression, node);
+                    }
+                } else {
+                    ExpressionNode node = new ExpressionNode(expression, indexOfExpression(expression));
+                    roots.add(node);
+                    index.put(expression, node);
+                }
+            }
+        }
+
+        public List<Expression> toGroupedList() {
+            List<Expression> groupedList = new ArrayList<>(getJoinedAttributeExpressions().size());
+            for (ExpressionNode node : sortListByIndex(roots)) {
+                groupedList.add(node.getExpression());
+                addChildToGroupedList(groupedList, node.getChildren());
+            }
+            return groupedList;
+        }
+
+        protected void addChildToGroupedList(List<Expression> groupedList, List<ExpressionNode> children) {
+            for (ExpressionNode node : sortListByIndex(children)) {
+                groupedList.add(node.getExpression());
+                addChildToGroupedList(groupedList, node.getChildren());
+            }
+        }
+
+        protected List<ExpressionNode> sortListByIndex(List<ExpressionNode> list) {
+            List<ExpressionNode> result = new ArrayList<>(list);
+            Collections.sort(result, new Comparator<ExpressionNode>() {
+                @Override
+                public int compare(JoinedAttributeManager.ExpressionNode o1, JoinedAttributeManager.ExpressionNode o2) {
+                    return Integer.compare(o1.getIndex(), o2.getIndex());
+                }
+            });
+            return result;
+        }
+
+        protected boolean contains(Expression expression) {
+            return findExpressionNode(expression) != null;
+        }
+
+        protected ExpressionNode findExpressionNode(Expression expression) {
+            return index.get(expression);
+        }
+
+        protected Expression resolveBaseExpression(Expression expression) {
+            Expression baseExpression = ((BaseExpression)expression).getBaseExpression();
+            //filter out aggregate expressions between this and the next node.
+            while (!baseExpression.isExpressionBuilder() && ((QueryKeyExpression)baseExpression).getMapping().isAggregateMapping()){
+                baseExpression = ((BaseExpression)baseExpression).getBaseExpression();
+            }
+            return baseExpression;
+        }
+
+        protected int indexOfExpression(Expression expression) {
+            int idx = initialExpressions.indexOf(expression);
+            return idx == -1 ? Integer.MAX_VALUE : idx;
+        }
+    }
+
+    protected class ExpressionNode {
+        protected Expression expression;
+        protected int index;
+        protected List<ExpressionNode> children;
+
+        public ExpressionNode(Expression expression, int index) {
+            this.expression = expression;
+            this.index = index;
+        }
+
+        public Expression getExpression() {
+            return expression;
+        }
+
+        public int getIndex() {
+            return index;
+        }
+
+        public void addChild(ExpressionNode expressionNode) {
+            if (children == null) {
+                children = new ArrayList<>();
+            }
+            children.add(expressionNode);
+        }
+
+        public List<ExpressionNode> getChildren() {
+            return children == null ? Collections.<ExpressionNode>emptyList() : children;
+        }
+    }
+    //cuba end
 }
