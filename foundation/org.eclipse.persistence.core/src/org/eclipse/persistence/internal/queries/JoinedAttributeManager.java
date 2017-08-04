@@ -797,10 +797,9 @@ public class JoinedAttributeManager implements Cloneable, Serializable {
     protected Expression addExpressionAndBaseToGroupedList(Expression expression, List expressionlist, Expression lastJoinedAttributeBaseExpression){
         if(!expressionlist.contains(expression)) {
             int baseExpressionIndex = -1;
-            Expression baseExpression = null;
             boolean sameBase = false;//better than using instanceof BaseExpression.  If its not an objectExpression, it will get an exception in prepare anyway
             if((expression.isObjectExpression())) {
-                baseExpression = ((BaseExpression)expression).getBaseExpression();
+                Expression baseExpression = ((BaseExpression)expression).getBaseExpression();
                 //filter out aggregate expressions between this and the next node.
                 while (!baseExpression.isExpressionBuilder() && ((QueryKeyExpression)baseExpression).getMapping().isAggregateMapping()){
                     baseExpression = ((BaseExpression)baseExpression).getBaseExpression();
@@ -826,9 +825,6 @@ public class JoinedAttributeManager implements Cloneable, Serializable {
             } else {
                 //Add attributeExpression at baseExpressionIndex + 1.
                 expressionlist.add(baseExpressionIndex+1, expression);
-                if (!sameBase) {
-                    lastJoinedAttributeBaseExpression = baseExpression;
-                }
             }
         }
         return lastJoinedAttributeBaseExpression;
