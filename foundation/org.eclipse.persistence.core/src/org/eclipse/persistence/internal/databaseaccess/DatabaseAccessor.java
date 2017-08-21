@@ -52,12 +52,7 @@ import java.util.Vector;
 
 import org.eclipse.persistence.exceptions.DatabaseException;
 import org.eclipse.persistence.exceptions.QueryException;
-import org.eclipse.persistence.internal.helper.ClassConstants;
-import org.eclipse.persistence.internal.helper.DatabaseField;
-import org.eclipse.persistence.internal.helper.Helper;
-import org.eclipse.persistence.internal.helper.LOBValueWriter;
-import org.eclipse.persistence.internal.helper.NonSynchronizedVector;
-import org.eclipse.persistence.internal.helper.ThreadCursoredList;
+import org.eclipse.persistence.internal.helper.*;
 import org.eclipse.persistence.internal.localization.ExceptionLocalization;
 import org.eclipse.persistence.internal.localization.ToStringLocalization;
 import org.eclipse.persistence.internal.sessions.AbstractRecord;
@@ -72,6 +67,8 @@ import org.eclipse.persistence.sessions.DatabaseLogin;
 import org.eclipse.persistence.sessions.DatabaseRecord;
 import org.eclipse.persistence.sessions.Login;
 import org.eclipse.persistence.sessions.SessionProfiler;
+
+// EclipseLink imports
 
 /**
  * INTERNAL:
@@ -584,6 +581,12 @@ public class DatabaseAccessor extends DatasourceAccessor {
      * @return depending of the type either the row count, row or vector of rows.
      */
     public Object basicExecuteCall(Call call, AbstractRecord translationRow, AbstractSession session, boolean batch) throws DatabaseException {
+        //cuba begin
+        long prepareTime = 0;
+        long executionTime = 0;
+        long closeTime = 0;
+        long connectionHash = -1;
+        //cuba end
         Statement statement = null;
         Object result = null;
         DatabaseCall dbCall = null;
@@ -618,11 +621,21 @@ public class DatabaseAccessor extends DatasourceAccessor {
         try {
             incrementCallCount(session);
             if (session.shouldLog(SessionLog.FINE, SessionLog.SQL)) {// Avoid printing if no logging required.
-                session.log(SessionLog.FINE, SessionLog.SQL, dbCall.getLogString(this), (Object[])null, this, false);
+                Connection connection = getConnection();
+                if (connection != null) {
+                    connectionHash = connection.hashCode();
+                }
+                session.log(SessionLog.FINE, SessionLog.SQL, buildLogString(dbCall, connectionHash,-1), (Object[])null, this, false);
             }
             session.startOperationProfile(SessionProfiler.SqlPrepare, dbCall.getQuery(), SessionProfiler.ALL);
             try {
+                //cuba begin
+                long prepareStart = System.currentTimeMillis();
+                //cuba end
                 statement = dbCall.prepareStatement(this, translationRow, session);
+                //cuba begin
+                prepareTime = System.currentTimeMillis() - prepareStart;
+                //cuba end
             } finally {
                 session.endOperationProfile(SessionProfiler.SqlPrepare, dbCall.getQuery(), SessionProfiler.ALL);
             }
@@ -634,6 +647,9 @@ public class DatabaseAccessor extends DatasourceAccessor {
                 this.possibleFailure = false;
                 return dbCall;
             } else if (dbCall.isNothingReturned()) {
+                //cuba begin
+                long executeStart = System.currentTimeMillis();
+                //cuba end
                 result = executeNoSelect(dbCall, statement, session);
                 this.writeStatementsCount++;
                 if (dbCall.isLOBLocatorNeeded()) {
@@ -641,10 +657,22 @@ public class DatabaseAccessor extends DatasourceAccessor {
                     // Bug 2804663 - LOBValueWriter is no longer a singleton
                     getLOBWriter().addCall(dbCall);
                 }
+                //cuba begin
+                executionTime = System.currentTimeMillis() - executeStart;
+                //cuba end
             } else if ((!dbCall.getReturnsResultSet() || (dbCall.getReturnsResultSet() && dbCall.shouldBuildOutputRow()))) {
-                result = session.getPlatform().executeStoredProcedure(dbCall, (PreparedStatement)statement, this, session);
+                //cuba begin
+                long executeStart = System.currentTimeMillis();
+                //cuba end
+                result = session.getPlatform().executeStoredProcedure(dbCall, (PreparedStatement) statement, this, session);
                 this.storedProcedureStatementsCount++;
+                //cuba begin
+                executionTime = System.currentTimeMillis() - executeStart;
+                //cuba end
             } else {
+                //cuba begin
+                long executeStart = System.currentTimeMillis();
+                //cuba end
                 resultSet = executeSelect(dbCall, statement, session);
                 this.readStatementsCount++;
                 if (!dbCall.shouldIgnoreFirstRowSetting() && dbCall.getFirstResult() != 0) {
@@ -659,6 +687,9 @@ public class DatabaseAccessor extends DatasourceAccessor {
                     return dbCall;
                 }
                 result = processResultSet(resultSet, dbCall, statement, session);
+                //cuba begin
+                executionTime = System.currentTimeMillis() - executeStart;
+                //cuba end
             }
             if (result instanceof ThreadCursoredList) {
                 this.possibleFailure = false;
@@ -705,8 +736,14 @@ public class DatabaseAccessor extends DatasourceAccessor {
 
         // This is in a separate try block to ensure that the real exception is not masked by the close exception.
         try {
+            //cuba begin
+            long closeStart = System.currentTimeMillis();
+            //cuba end
             // Allow for caching of statement, forced closes are not cache as they failed execution so are most likely bad.
             releaseStatement(statement, dbCall.getSQLString(), dbCall, session);
+            //cuba begin
+            closeTime = System.currentTimeMillis() - closeStart;
+            //cuba end
         } catch (SQLException exception) {
             //With an external connection pool the connection may be null after this call, if it is we will
             //be unable to determine if it is a connection based exception so treat it as if it wasn't.
@@ -716,6 +753,13 @@ public class DatabaseAccessor extends DatasourceAccessor {
             }
             throw DatabaseException.sqlException(exception, this, session, false);
         }
+
+        //cuba begin
+        if (session.shouldLog(SessionLog.FINE, SessionLog.SQL)) {// Avoid printing if no logging required.
+            session.log(SessionLog.FINE, SessionLog.SQL, buildLogString(dbCall, connectionHash, prepareTime + executionTime + closeTime),
+                    (Object[])null, this, false);
+        }
+        //cuba end
 
         this.possibleFailure = false;
         return result;
@@ -1875,4 +1919,21 @@ public class DatabaseAccessor extends DatasourceAccessor {
             getActiveBatchWritingMechanism(session).executeBatchedStatements(session);
         }
     }
+
+    //cuba begin
+    protected String buildLogString(DatabaseCall dbCall, long connectionHash, long totalTime) {
+        StringBuilder buf = new StringBuilder();
+        buf.append("<t ").append(Thread.currentThread().hashCode());
+        if (connectionHash != -1) {
+            buf.append(", conn ").append(connectionHash);
+        }
+        buf.append("> ");
+        if (totalTime != -1) {
+            buf.append("[").append(totalTime).append(" ms] spent");
+        } else {
+            buf.append(dbCall.getLogString(this));
+        }
+        return buf.toString();
+    }
+    //cuba end
 }
