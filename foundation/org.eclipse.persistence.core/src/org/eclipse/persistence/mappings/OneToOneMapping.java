@@ -2320,6 +2320,13 @@ public class OneToOneMapping extends ObjectReferenceMapping implements Relationa
             } finally {
                 org.eclipse.persistence.internal.helper.CubaUtil.setSoftDeletion(prevSoftDeletion);
             }
+        } else if (org.eclipse.persistence.internal.helper.CubaUtil.isOriginalSoftDeletion()) {
+            Boolean prevSoftDeletion = org.eclipse.persistence.internal.helper.CubaUtil.setSoftDeletion(true);
+            try {
+                return super.prepareNestedBatchQuery(query);
+            } finally {
+                org.eclipse.persistence.internal.helper.CubaUtil.setSoftDeletion(prevSoftDeletion);
+            }
         } else {
             return super.prepareNestedBatchQuery(query);
         }
