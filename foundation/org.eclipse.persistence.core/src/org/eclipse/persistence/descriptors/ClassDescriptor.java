@@ -350,6 +350,14 @@ public class ClassDescriptor extends CoreDescriptor<AttributeGroup, DescriptorEv
      */
     protected boolean shouldLockForClone = true;
 
+    //cuba begin
+    protected DeletePredicate deletePredicate;
+
+    public interface DeletePredicate {
+        boolean isDeleted(Object entity);
+    }
+    //cuba end
+
     /**
      * PUBLIC:
      * Return a new descriptor.
@@ -6852,4 +6860,14 @@ public class ClassDescriptor extends CoreDescriptor<AttributeGroup, DescriptorEv
     public void clearReferencingClasses() {
         this.referencingClasses.clear();
     }
+
+    //cuba begin
+    public DeletePredicate getDeletePredicate() {
+        return deletePredicate;
+    }
+
+    public void setDeletePredicate(DeletePredicate deletePredicate) {
+        this.deletePredicate = deletePredicate;
+    }
+    //cuba end
 }
