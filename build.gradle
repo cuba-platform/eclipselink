@@ -1,5 +1,5 @@
 group = 'com.haulmont.thirdparty'
-version = '2.6.2.cuba19'
+version = '2.6.2.cuba20'
 
 def repositoryUrl = 'http://repository.haulmont.com:8587/nexus/content'
 def repositoryUser = System.getenv('HAULMONT_REPOSITORY_USER')
