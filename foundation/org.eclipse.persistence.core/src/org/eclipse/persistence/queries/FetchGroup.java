@@ -22,7 +22,9 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.persistence.core.queries.CoreAttributeGroup;
+import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.descriptors.FetchGroupManager;
+import org.eclipse.persistence.internal.helper.CubaUtil;
 import org.eclipse.persistence.internal.localization.ExceptionLocalization;
 import org.eclipse.persistence.internal.queries.AttributeItem;
 import org.eclipse.persistence.internal.queries.EntityFetchGroup;
@@ -164,8 +166,6 @@ public class FetchGroup extends AttributeGroup {
             }
         }
         // cuba end
-        ReadObjectQuery query = new ReadObjectQuery(entity);
-        query.setShouldUseDefaultFetchGroup(false);
         //Session session = entity._persistence_getSession();
         boolean shouldLoadResultIntoSelectionObject = false;
         if (session.isUnitOfWork()) {
@@ -173,6 +173,8 @@ public class FetchGroup extends AttributeGroup {
         } else {
             shouldLoadResultIntoSelectionObject = !session.getIdentityMapAccessor().containsObjectInIdentityMap(entity);
         }
+        ReadObjectQuery query = new ReadObjectQuery(entity);
+        query.setShouldUseDefaultFetchGroup(false);
         if (shouldLoadResultIntoSelectionObject) {
             // entity is not in the cache.
             // instead of updating object in the cache update entity directly.
@@ -184,7 +186,21 @@ public class FetchGroup extends AttributeGroup {
             entity._persistence_setFetchGroup(null);
             entity._persistence_setSession(null);
         }
-        Object result = session.executeQuery(query);
+        Object result = null;
+        //cuba begin
+        ClassDescriptor.DeletePredicate deletePredicate = session.getClassDescriptor(entity).getDeletePredicate();
+        boolean isDeleted = deletePredicate != null && deletePredicate.isDeleted(entity);
+        if (isDeleted && CubaUtil.isSoftDeletion()) {
+            Boolean prevSoftDeletion = org.eclipse.persistence.internal.helper.CubaUtil.setSoftDeletion(false);
+            try {
+                result = session.executeQuery(query);
+            } finally {
+                org.eclipse.persistence.internal.helper.CubaUtil.setSoftDeletion(prevSoftDeletion);
+            }
+        } else {
+            result = session.executeQuery(query);
+        }
+        //cuba end
         if (result == null) {
             // the object was not found in the db end exception will be thrown - restore the fetch group back.
             if (shouldLoadResultIntoSelectionObject) {
