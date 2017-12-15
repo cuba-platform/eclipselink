@@ -1,5 +1,10 @@
+def artifactVersion = '2.6.2.cuba20'
+if (rootProject.hasProperty('buildVersion')) {
+    artifactVersion = rootProject['buildVersion']
+}
+
 group = 'com.haulmont.thirdparty'
-version = '2.6.2.cuba20'
+version = artifactVersion
 
 def repositoryUrl = 'http://repository.haulmont.com:8587/nexus/content'
 def repositoryUser = System.getenv('HAULMONT_REPOSITORY_USER')
