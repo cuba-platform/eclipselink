@@ -788,8 +788,8 @@ public class ObjectBuilder extends CoreObjectBuilder<AbstractRecord, AbstractSes
             FetchGroup fetchGroup = fetchGroupManager.getObjectFetchGroup(object);
             if (fetchGroup != null) {
                 if (!fetchGroup.getAttributeNames().containsAll(group.getAttributeNames())) {
-                    // trigger fetch group if it does not contain all attributes of the current group.
-                    fetchGroup.onUnfetchedAttribute((FetchGroupTracker)object, null);
+                    //trigger fetch group if it does not contain all attributes of the current group.
+                    fetchGroup.onUnfetchedAttribute((FetchGroupTracker)object, null, group.toFetchGroup());
                 }
             }
         }
