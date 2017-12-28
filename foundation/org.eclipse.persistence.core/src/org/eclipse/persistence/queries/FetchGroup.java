@@ -154,6 +154,11 @@ public class FetchGroup extends AttributeGroup {
      * into the entity.
      */
     public String onUnfetchedAttribute(FetchGroupTracker entity, String attributeName) {
+        return onUnfetchedAttribute(entity, attributeName, null);
+    }
+
+    //cuba begin
+    public String onUnfetchedAttribute(FetchGroupTracker entity, String attributeName, FetchGroup newFetchGroup) {
         if (rootEntity != null){
             return rootEntity._persistence_getFetchGroup().onUnfetchedAttribute(rootEntity, attributeName);
         }
@@ -185,17 +190,19 @@ public class FetchGroup extends AttributeGroup {
             // To avoid infinite loop clear the fetch group right away.
             entity._persistence_setFetchGroup(null);
             entity._persistence_setSession(null);
+        } else if (newFetchGroup != null) {
+            query.setFetchGroup(newFetchGroup);
         }
         Object result = null;
         //cuba begin
         ClassDescriptor.DeletePredicate deletePredicate = session.getClassDescriptor(entity).getDeletePredicate();
         boolean isDeleted = deletePredicate != null && deletePredicate.isDeleted(entity);
         if (isDeleted && CubaUtil.isSoftDeletion()) {
-            Boolean prevSoftDeletion = org.eclipse.persistence.internal.helper.CubaUtil.setSoftDeletion(false);
+            Boolean prevSoftDeletion = CubaUtil.setSoftDeletion(false);
             try {
                 result = session.executeQuery(query);
             } finally {
-                org.eclipse.persistence.internal.helper.CubaUtil.setSoftDeletion(prevSoftDeletion);
+                CubaUtil.setSoftDeletion(prevSoftDeletion);
             }
         } else {
             result = session.executeQuery(query);
@@ -212,6 +219,7 @@ public class FetchGroup extends AttributeGroup {
         }
         return null;
     }
+    //cuba end
 
     /**
      * INTERNAL:
