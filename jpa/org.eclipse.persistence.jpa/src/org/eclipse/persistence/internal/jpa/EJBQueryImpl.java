@@ -133,7 +133,8 @@ public class EJBQueryImpl<X> extends QueryImpl implements JpaQuery<X> {
         // PERF: Check if the JPQL has already been parsed.
         // Only allow queries with default properties to be parse cached.
         boolean isCacheable = (queryName == null) && (hints == null)
-                && org.eclipse.persistence.internal.helper.CubaUtil.isSoftDeletion(); // cuba: do not cache queries when soft delete is disabled
+                && org.eclipse.persistence.internal.helper.CubaUtil.isSoftDeletion() // cuba: do not cache queries when soft delete is disabled
+                && org.eclipse.persistence.internal.helper.CubaUtil.isEnabledJPQLParseCache(); // cuba: do not cache queries in some cases
         DatabaseQuery databaseQuery = null;
         if (isCacheable) {
             databaseQuery = (DatabaseQuery) session.getProject().getJPQLParseCache().get(jpqlQuery);
