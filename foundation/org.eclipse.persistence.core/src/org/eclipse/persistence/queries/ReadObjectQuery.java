@@ -309,6 +309,22 @@ public class ReadObjectQuery extends ObjectLevelReadQuery {
 
     /**
      * INTERNAL:
+     * Check to see if a custom query should be used for this query.
+     * This is done before the query is copied and prepared/executed.
+     * null means there is none.
+     */
+    @Override
+    protected DatabaseQuery checkForCustomQuery(AbstractSession session, AbstractRecord translationRow) {
+        // begin cuba
+        if (!org.eclipse.persistence.internal.helper.CubaUtil.isSoftDeletion()) {
+            return null;
+        }
+        // end cuba
+        return super.checkForCustomQuery(session, translationRow);
+    }
+
+    /**
+     * INTERNAL:
      * Check and return custom query flag. Custom query flag value is initialized when stored value is {@code null}.
      * Called from {@link #checkForCustomQuery(AbstractSession, AbstractRecord)} to retrieve custom query flag.
      * @param session        Current session.
