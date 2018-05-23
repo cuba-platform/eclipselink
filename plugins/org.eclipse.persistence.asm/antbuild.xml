@@ -115,7 +115,7 @@
                                                 else="qualifier">
             <equals arg1="${build.type}" arg2="RELEASE"/>
         </condition>
-        <property name="version.string"        value="${release.version}.${version.qualifier}"/>
+        <property name="version.string"        value="${release.version}-${version.qualifier}"/>
         <property name="release.designation"   value="EclipseLink ${release.version} Build"/>
         <property name="specification.vendor"  value="Eclipse.org - EclipseLink Project"/>
         <property name="implementation.vendor" value="${specification.vendor}"/>

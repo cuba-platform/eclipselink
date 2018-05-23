@@ -220,7 +220,7 @@
 
         <!-- Set version.string appropriately. variable should only be used for   -->
         <!--    uploaded filenames  or manifest entries.                          -->
-        <property name="version.string" value="${release.version}.${version.qualifier}"/>
+        <property name="version.string" value="${release.version}-${version.qualifier}"/>
 
         <!-- Set extract.root.dir for this publishing  (not used for milestones, but has to be here due to use of "release.version"  -->
         <property name="extract.root.dir" value="${build.tool.root}/exported_builds"/>
@@ -766,7 +766,7 @@
         <echo message="                         '${releng.repo.dir}/ant_customizations.jar'"/>
         <echo message="        release.version ='${release.version}'"/>
         <echo message="        version.string  ='${version.string}'"/>
-        <echo message="                         '${release.version}.${version.qualifier}'"/>
+        <echo message="                         '${release.version}-${version.qualifier}'"/>
         <echo message="        build.date      ='${build.date}'"/>
         <echo message="        build.type      ='${build.type}'"/>
         <echo message="        bundle.dir      ='${tmp.maven.dir}'"/>
@@ -774,7 +774,7 @@
             <property name="build.deps.dir"   value="${build.deps.dir}"/>
             <property name="custom.tasks.lib" value="${releng.repo.dir}/ant_customizations.jar"/>
             <property name="release.version"  value="${release.version}"/>
-            <property name="version.string"   value="${release.version}.${version.qualifier}"/>
+            <property name="version.string"   value="${release.version}-${version.qualifier}"/>
             <property name="build.date"       value="${build.date}"/>
             <property name="build.type"       value="${build.type}"/>
             <property name="bundle.dir"       value="${tmp.maven.dir}"/>
@@ -792,7 +792,7 @@
         <echo message="                         '${releng.repo.dir}/ant_customizations.jar'"/>
         <echo message="        release.version ='${release.version}'"/>
         <echo message="        version.string  ='${version.string}'"/>
-        <echo message="                         '${release.version}.${version.qualifier}'"/>
+        <echo message="                         '${release.version}-${version.qualifier}'"/>
         <echo message="        build.date      ='${build.date}'"/>
         <echo message="        build.type      ='${build.type}'"/>
         <echo message="        bundle.dir      ='${tmp.maven.dir}'"/>
@@ -800,7 +800,7 @@
             <property name="build.deps.dir"   value="${build.deps.dir}"/>
             <property name="custom.tasks.lib" value="${releng.repo.dir}/ant_customizations.jar"/>
             <property name="release.version"  value="${release.version}"/>
-            <property name="version.string"   value="${release.version}.${version.qualifier}"/>
+            <property name="version.string"   value="${release.version}-${version.qualifier}"/>
             <property name="build.date"       value="${build.date}"/>
             <property name="build.type"       value="${build.type}"/>
             <property name="bundle.dir"       value="${tmp.maven.dir}"/>
