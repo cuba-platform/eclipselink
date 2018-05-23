@@ -1,9 +1,13 @@
-def artifactVersion = '2.6.2.cuba23'
+def artifactVersion = '2.7.1-1-cuba'
+def originalVersion = '2.7.1'
 if (rootProject.hasProperty('buildVersion')) {
     artifactVersion = rootProject['buildVersion']
 }
+if (rootProject.hasProperty('originalVersion')) {
+    originalVersion = rootProject['originalVersion']
+}
 
-group = 'com.haulmont.thirdparty'
+group = 'org.eclipse.persistence'
 version = artifactVersion
 
 def repositoryUrl = 'http://repository.haulmont.com:8587/nexus/content'
@@ -30,22 +34,22 @@ apply plugin: 'maven-publish'
 
 configurations {
     junitAnt
-	junitTasksAnt
-	jdbcDriver
-	deployerJars
+    junitTasksAnt
+    jdbcDriver
+    deployerJars
 }
 
 dependencies {
-	deployerJars 'org.apache.maven.wagon:wagon-http:1.0-beta-2'
-    junitAnt ('junit:junit:4.12') {
-		transitive = false;
-	}
+    deployerJars 'org.apache.maven.wagon:wagon-http:1.0-beta-2'
+    junitAnt('junit:junit:4.12') {
+        transitive = false;
+    }
     junitTasksAnt('org.apache.ant:ant-junit:1.9.3') {
         transitive = false;
     }
-	jdbcDriver('mysql:mysql-connector-java:5.1.39') {
-		transitive = false;
-	}
+    jdbcDriver('mysql:mysql-connector-java:5.1.39') {
+        transitive = false;
+    }
 }
 
 ant.properties['junit.lib'] = configurations.junitAnt.asPath
@@ -56,63 +60,60 @@ ant.properties['db.user'] = 'root'
 ant.properties['db.pwd'] = 'root'
 
 ant.taskdef(name: 'junit', classname: 'org.apache.tools.ant.taskdefs.optional.junit.JUnitTask',
-             classpath: configurations.junitTasksAnt.asPath)
+        classpath: configurations.junitTasksAnt.asPath)
 ant.taskdef(name: 'junitreport', classname: 'org.apache.tools.ant.taskdefs.optional.junit.XMLResultAggregator',
-             classpath: configurations.junitTasksAnt.asPath)			 
+        classpath: configurations.junitTasksAnt.asPath)
 
 ant.importBuild('antbuild.xml') { antTargetName ->
     'ant-' + antTargetName
 }
 
-task unpackManifest(type: Copy, dependsOn: 'ant-package-src-jar') {
-    from zipTree('eclipselink-src.zip')
-    into 'build/tmp/manifest'
-    include 'META-INF/MANIFEST.MF'
-}
-
-task buildSourceJar(type: Jar, dependsOn: unpackManifest) {
-    from zipTree('eclipselink-src.zip')
-    destinationDir = file('build/libs')
-    baseName = 'eclipselink'    
-    classifier = 'sources'
-    manifest {
-        from 'build/tmp/manifest/META-INF/MANIFEST.MF'
-    }
-}
-
-task buildJar(type: Jar, dependsOn: unpackManifest) {
-    from zipTree('eclipselink.jar')
-    destinationDir = file('build/libs')
-    baseName = 'eclipselink'    
-    manifest {
-        from 'build/tmp/manifest/META-INF/MANIFEST.MF'
-    }
-}
-
-artifacts {
-    archives buildJar 
-    archives buildSourceJar
-}
-
-uploadArchives.configure {
-    repositories.mavenDeployer {
-        name = 'httpDeployer'
-        configuration = configurations.deployerJars
-        repository(url: uploadUrl) {
-            authentication(userName: uploadUser, password: uploadPassword)
-        }
-    }
-}
-
 // install to the local Maven repo
 publishing {
     publications {
-        mavenJava(MavenPublication) {
-            artifact buildJar 
-            
-            artifact buildSourceJar {
-                classifier "sources"
+        core(MavenPublication) {
+            artifact file("plugins/org.eclipse.persistence.core_${artifactVersion}.jar")
+            artifactId 'org.eclipse.persistence.core'
+            artifact source: file("plugins/org.eclipse.persistence.core.source_${artifactVersion}.jar") classifier 'src'
+            pom.withXml {
+                def dependencies = asNode().appendNode('dependencies')
+                addDependency(dependencies, 'org.eclipse.persistence', 'javax.persistence', '2.2.0')
+                addDependency(dependencies, 'org.glassfish', 'javax.json', '1.0.4')
+            }
+        }
+        jpa(MavenPublication) {
+            artifact file("plugins/org.eclipse.persistence.jpa_${artifactVersion}.jar")
+            artifactId 'org.eclipse.persistence.jpa'
+            artifact source: file("plugins/org.eclipse.persistence.jpa.source_${artifactVersion}.jar") classifier 'src'
+            pom.withXml {
+                def dependencies = asNode().appendNode('dependencies')
+                addDependency(dependencies, 'org.eclipse.persistence', 'javax.persistence', '2.2.0')
+                addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.asm', originalVersion)
+                addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.antlr', originalVersion)
+                addDependency(dependencies, 'org.glassfish', 'javax.json', '1.0.4')
+                addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.jpa.jpql', originalVersion)
+                addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.core', artifactVersion)
             }
         }
     }
+    repositories {
+        maven {
+            name 'nexus'
+            url uploadUrl
+            credentials {
+                username uploadUser
+                password uploadPassword
+            }
+        }
+    }
+}
+
+static def addDependency(def dependencies, def groupId, def artifactId, version) {
+    def dependency = dependencies.appendNode('dependency')
+    dependency.appendNode('groupId', groupId)
+    dependency.appendNode('artifactId', artifactId)
+    dependency.appendNode('version', version)
+    dependency.appendNode('type', 'jar')
+    dependency.appendNode('scope', 'compile')
+    dependency.appendNode('optional', 'false')
 }
