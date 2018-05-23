@@ -106,7 +106,7 @@ access to eclipse install (knowledge of blddeps default)
 
         <!-- Set version.string appropriately. variable should only be used for   -->
         <!--    uploaded filenames  or manifest entries.                          -->
-        <property name="version.string" value="${release.version}.${version.qualifier}"/>
+        <property name="version.string" value="${release.version}-${version.qualifier}"/>
 
         <!-- Set extract.dir appropriately for this build                         -->
         <property name="extract.dir" value="${build.tool.root}/exported_builds/${release.version}/${version.qualifier}"/>
