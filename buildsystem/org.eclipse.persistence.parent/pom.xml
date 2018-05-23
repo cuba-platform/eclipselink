@@ -283,7 +283,7 @@
                             <goal>plugin-source</goal>
                         </goals>
                         <configuration>
-                            <finalName>${project.artifactId}.source_${release.version}.${build.qualifier}</finalName>
+                            <finalName>${project.artifactId}.source_${release.version}-${build.qualifier}</finalName>
                             <sourceBundle>true</sourceBundle>
                             <sourceBundleSuffix>.source</sourceBundleSuffix>
                             <qualifier>${build.qualifier}</qualifier>
@@ -300,9 +300,9 @@
                         <phase>package</phase>
                         <configuration>
                             <target>
-                                <zip file="../../target/${project.artifactId}.source_${release.version}.${build.qualifier}.jar" duplicate="preserve">
+                                <zip file="../../target/${project.artifactId}.source_${release.version}-${build.qualifier}.jar" duplicate="preserve">
                                     <zipgroupfileset dir="../../target">
-                                        <include name="${project.artifactId}.source_${release.version}.${build.qualifier}-sources.jar"/>
+                                        <include name="${project.artifactId}.source_${release.version}-${build.qualifier}-sources.jar"/>
                                     </zipgroupfileset>
                                     <fileset dir="../../buildsystem/org.eclipse.persistence.parent/resource" includes="*.html"/>
                                 </zip>
@@ -344,6 +344,6 @@
                 <directory>../${testId}/resources</directory>
             </testResource>
         </testResources>
-        <finalName>${project.artifactId}_${release.version}.${build.qualifier}</finalName>
+        <finalName>${project.artifactId}_${release.version}-${build.qualifier}</finalName>
     </build>
 </project>

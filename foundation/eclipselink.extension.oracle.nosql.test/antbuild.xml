@@ -168,7 +168,7 @@
         <property name="build.type" value="SNAPSHOT"/>
         <property name="svn.revision" value="NA"/>
         <property name="version.qualifier" value="qualifier"/>
-        <property name="version.string" value="${release.version}.${version.qualifier}"/>
+        <property name="version.string" value="${release.version}-${version.qualifier}"/>
         <property name="release.designation"  value="EclipseLink ${release.version} Build"/>
 
         <!-- Determine appropriate settings for lib variables (overrides of .lib variables won't get reset) -->
