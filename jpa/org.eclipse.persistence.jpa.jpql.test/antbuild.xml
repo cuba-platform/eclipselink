@@ -90,7 +90,7 @@
     <property name="hermes.test.2.jpa.plugins.dir"    value="${hermes.test.2.base.dir}/jpa/plugins"/>
 
     <property name="version.qualifier"     value="qualifier"/>
-    <property name="version.string"        value="${release.version}.${version.qualifier}"/>
+    <property name="version.string"        value="${release.version}-${version.qualifier}"/>
 
     <!-- JVM used to run tests -->
     <property name="test.junit.jvm" value="${env.JAVA_HOME}"/>

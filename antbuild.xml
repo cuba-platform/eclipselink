@@ -158,7 +158,7 @@
     <condition property="version.qualifier" value="qualifier" else="v${build.date}-${git.hash}">
         <equals arg1="${git.hash}" arg2="NA"/>
     </condition>
-    <property name="version.string"      value="${release.version}.${version.qualifier}"/>
+    <property name="version.string"      value="${release.version}-${version.qualifier}"/>
     <property name="release.designation" value="EclipseLink DeveloperBuild"/>
 
     <path id="javadoc.path">

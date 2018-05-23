@@ -113,7 +113,7 @@
         <!-- versioning -->
         <!-- These variables  are set in autobuild.xml. A manual build gets defaults -->
         <property name="version.qualifier"     value="qualifier"/>
-        <property name="version.string"        value="${release.version}.${version.qualifier}"/>
+        <property name="version.string"        value="${release.version}-${version.qualifier}"/>
 
         <!-- dependency properties -->
         <selectbundle basename="${asm.prefix}"  directory="${dbwsbldrorcltst.2.common.plugins.dir}"
