@@ -127,7 +127,7 @@
         <!-- versioning -->
         <!-- These variables  are set in autobuild.xml. A manual build gets defaults -->
         <property name="version.qualifier" value="qualifier"/>
-        <property name="version.string" value="${release.version}.${version.qualifier}"/>
+        <property name="version.string" value="${release.version}-${version.qualifier}"/>
 
         <!-- Local path variables -->
         <property name="core_test.src.dir"      value="${core_test.build.location}/${src.dir}"/>

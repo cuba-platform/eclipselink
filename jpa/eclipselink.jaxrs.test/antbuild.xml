@@ -94,7 +94,7 @@
     <property name="jacocoagent.lib"                  value="${extensions.depend.dir}/${jacocoagent.jar}"/>
 
     <property name="version.qualifier"     value="qualifier"/>
-    <property name="version.string"        value="${release.version}.${version.qualifier}"/>
+    <property name="version.string"        value="${release.version}-${version.qualifier}"/>
 
     <echo message="ant.project.name               = '${ant.project.name}'"/>
     <echo message="jaxrs.test.build.location      = '${jaxrs.test.build.location}'"/>

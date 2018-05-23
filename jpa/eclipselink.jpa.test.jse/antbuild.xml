@@ -39,7 +39,7 @@
     <property name="jse.jpa.plugins.dir"    value="${jse.jpa.root}/plugins"/>
 
     <property name="version.qualifier"     value="qualifier"/>
-    <property name="version.string"        value="${release.version}.${version.qualifier}"/>
+    <property name="version.string"        value="${release.version}-${version.qualifier}"/>
 
     <!-- Not sure if there is a better way to refer to dependencies? -->
     <property name="jse.eclipselink.jar" value="${jse.el.root}/${eclipselink.jar}"/>
