@@ -30,7 +30,7 @@ import java.util.List;
  */
 public class TransientCompatibleAnnotations {
 
-    private static final List<String> transientCompatibleAnnotations = Collections.unmodifiableList(new ArrayList<String>() {{
+    private static List<String> transientCompatibleAnnotations = Collections.unmodifiableList(new ArrayList<String>() {{
         add("javax.persistence.PersistenceUnits");
         add("javax.persistence.PersistenceUnit");
         add("javax.persistence.PersistenceContext");
@@ -47,6 +47,12 @@ public class TransientCompatibleAnnotations {
      */
     public static List<String> getTransientCompatibleAnnotations(){
         return transientCompatibleAnnotations;
+    }
+
+    public static synchronized void addAnnotation(String annotationName){
+        List newAnnotations = new ArrayList(transientCompatibleAnnotations);
+        newAnnotations.add(annotationName);
+        transientCompatibleAnnotations = Collections.unmodifiableList(newAnnotations);
     }
 
 }
