@@ -88,12 +88,18 @@ publishing {
             pom.withXml {
                 def dependencies = asNode().appendNode('dependencies')
                 addDependency(dependencies, 'org.eclipse.persistence', 'javax.persistence', '2.2.0')
-                addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.asm', originalVersion)
+                addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.asm', artifactVersion)
                 addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.antlr', originalVersion)
                 addDependency(dependencies, 'org.glassfish', 'javax.json', '1.0.4')
                 addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.jpa.jpql', originalVersion)
                 addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.core', artifactVersion)
             }
+        }
+        asm(MavenPublication) {
+            version artifactVersion
+            artifact file("plugins/org.eclipse.persistence.asm_6.1.1.v201804051226.jar")
+            artifactId 'org.eclipse.persistence.asm'
+            artifact source: file("plugins/org.eclipse.persistence.asm.source_6.1.1.v201804051226.jar") classifier 'src'
         }
     }
     repositories {
