@@ -74,8 +74,9 @@ publishing {
         core(MavenPublication) {
             artifact file("plugins/org.eclipse.persistence.core_${artifactVersion}.jar")
             artifactId 'org.eclipse.persistence.core'
-            artifact source: file("plugins/org.eclipse.persistence.core.source_${artifactVersion}.jar") classifier 'src'
+            artifact source: file("plugins/org.eclipse.persistence.core.source_${artifactVersion}.jar"), classifier: 'sources'
             pom.withXml {
+                asNode().appendNode('packaging', 'jar')
                 def dependencies = asNode().appendNode('dependencies')
                 addDependency(dependencies, 'org.eclipse.persistence', 'javax.persistence', '2.2.0')
                 addDependency(dependencies, 'org.glassfish', 'javax.json', '1.0.4')
@@ -84,8 +85,9 @@ publishing {
         jpa(MavenPublication) {
             artifact file("plugins/org.eclipse.persistence.jpa_${artifactVersion}.jar")
             artifactId 'org.eclipse.persistence.jpa'
-            artifact source: file("plugins/org.eclipse.persistence.jpa.source_${artifactVersion}.jar") classifier 'src'
+            artifact source: file("plugins/org.eclipse.persistence.jpa.source_${artifactVersion}.jar"), classifier: 'sources'
             pom.withXml {
+                asNode().appendNode('packaging', 'jar')
                 def dependencies = asNode().appendNode('dependencies')
                 addDependency(dependencies, 'org.eclipse.persistence', 'javax.persistence', '2.2.0')
                 addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.asm', originalVersion)
