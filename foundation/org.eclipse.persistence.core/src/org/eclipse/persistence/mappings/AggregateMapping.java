@@ -702,8 +702,10 @@ public abstract class AggregateMapping extends DatabaseMapping {
                 if(!targetFetchGroup.isSupersetOf(sourceFetchGroup)) {
                     targetFetchGroup.onUnfetchedAttribute((FetchGroupTracker)target, null);
                 }
-            } else if (originalWasNull && sourceFetchGroup != null){
-                    this.descriptor.getFetchGroupManager().setObjectFetchGroup(target, sourceFetchGroup, targetSession);
+            } else if (originalWasNull && sourceFetchGroup != null) {
+                //cuba begin
+                setTargetFetchGroupIfNull(target, sourceFetchGroup, targetSession);
+                //cuba end
             }
         }
 
@@ -1080,4 +1082,10 @@ public abstract class AggregateMapping extends DatabaseMapping {
         }
         return true;
     }
+
+    //cuba begin
+    protected void setTargetFetchGroupIfNull(Object target, FetchGroup sourceFetchGroup, AbstractSession targetSession) {
+        this.descriptor.getFetchGroupManager().setObjectFetchGroup(target, sourceFetchGroup, targetSession);
+    }
+    //cuba end
 }
