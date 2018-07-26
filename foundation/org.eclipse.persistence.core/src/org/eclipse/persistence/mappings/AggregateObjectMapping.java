@@ -2231,4 +2231,10 @@ public class AggregateObjectMapping extends AggregateMapping implements Relation
             builder.getMappingsByField().put(secondaryField, mapping);
         }
     }
+
+    //cuba begin
+    protected void setTargetFetchGroupIfNull(Object target, FetchGroup sourceFetchGroup, AbstractSession targetSession) {
+        //Do nothing for NULL embedded, because value doesn't save
+    }
+    //cuba end
 }
