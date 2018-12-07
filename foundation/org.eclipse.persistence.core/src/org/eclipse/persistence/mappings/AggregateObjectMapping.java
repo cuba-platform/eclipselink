@@ -37,6 +37,8 @@ import org.eclipse.persistence.descriptors.changetracking.DeferredChangeDetectio
 import org.eclipse.persistence.descriptors.changetracking.ObjectChangeTrackingPolicy;
 import org.eclipse.persistence.exceptions.*;
 import org.eclipse.persistence.expressions.*;
+import org.eclipse.persistence.internal.expressions.ObjectExpression;
+import org.eclipse.persistence.internal.expressions.QueryKeyExpression;
 import org.eclipse.persistence.internal.helper.*;
 import org.eclipse.persistence.internal.identitymaps.CacheKey;
 import org.eclipse.persistence.internal.queries.ContainerPolicy;
@@ -348,7 +350,8 @@ public class AggregateObjectMapping extends AggregateMapping implements Relation
                 // Must carry over properties for batching to work.
                 nestedObjectQuery.setProperties(objectQuery.getProperties());
                 // Computed nested batch attribute expressions.
-                nestedObjectQuery.getBatchFetchPolicy().setAttributeExpressions(extractNestedExpressions(objectQuery.getBatchReadAttributeExpressions(), nestedObjectQuery.getExpressionBuilder()));
+                nestedObjectQuery.getBatchFetchPolicy().setAttributeExpressions(extractNestedExpressionsForBatch(objectQuery.getBatchReadAttributeExpressions(),
+                        nestedObjectQuery.getExpressionBuilder().get(attributeName)));
                 nestedObjectQuery.computeBatchReadAttributes();
             }
             FetchGroup parentQueryFetchGroup = sourceQuery.getExecutionFetchGroup(this.descriptor);
@@ -458,6 +461,46 @@ public class AggregateObjectMapping extends AggregateMapping implements Relation
         }
         return aggregate;
     }
+
+    //cuba begin.
+    //Same as org.eclipse.persistence.mappings.DatabaseMapping.extractNestedExpressions,
+    //but work with expression instead of expressionBuilder
+    /**
+     * INTERNAL:
+     * Extract the nested attribute expressions that apply to this mapping.
+     * This is used for partial objects, and batch fetching.
+     */
+    protected List<Expression> extractNestedExpressionsForBatch(List<Expression> expressions, Expression newRoot) {
+        List<Expression> nestedExpressions = new ArrayList(expressions.size());
+
+        /*
+         * If the expression closest to to the Builder is for this mapping, that expression is rebuilt using
+         * newRoot and added to the nestedExpressions list.
+         */
+        for (Expression next : expressions) {
+            // The expressionBuilder can be one of the locked expressions in
+            // the ForUpdateOfClause.
+            if (!next.isQueryKeyExpression()) {
+                continue;
+            }
+            QueryKeyExpression expression = (QueryKeyExpression)next;
+            ObjectExpression base = expression;
+            boolean afterBase = false;
+
+            while (!base.getBaseExpression().isExpressionBuilder()) {
+                base = (ObjectExpression)base.getBaseExpression();
+                afterBase = true;
+            }
+            if (base.getName().equals(getAttributeName())) {
+                // Only add the nested expressions for the mapping (not the mapping itself).
+                if (afterBase) {
+                    nestedExpressions.add(expression.rebuildOn(base, newRoot));
+                }
+            }
+        }
+        return nestedExpressions;
+    }
+    //cuba end
 
     /**
      * INTERNAL:
