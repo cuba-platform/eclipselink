@@ -2260,7 +2260,12 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
             targetQuery = (ReadQuery) targetQuery.clone();
             targetQuery.setIsExecutionClone(true);
         }
-
+if (!org.eclipse.persistence.internal.helper.CubaUtil.isSoftDeletion()) {
+            if (targetQuery == this.selectionQuery) {
+                targetQuery = (ObjectLevelReadQuery)targetQuery.clone();
+                targetQuery.setIsExecutionClone(true);
+            }
+        }
         // Copy nested fetch group from the source query
         if (targetQuery.isObjectLevelReadQuery() && targetQuery.getDescriptor().hasFetchGroupManager()) {
             FetchGroup sourceFG = sourceQuery.getExecutionFetchGroup(this.getDescriptor());
