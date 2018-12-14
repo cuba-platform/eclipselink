@@ -78,7 +78,7 @@ publishing {
             pom.withXml {
                 asNode().appendNode('packaging', 'jar')
                 def dependencies = asNode().appendNode('dependencies')
-                addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.asm', originalVersion)
+                addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.asm', artifactVersion)
                 addDependency(dependencies, 'javax.json', 'javax.json-api', '1.1.2')
             }
         }
@@ -90,11 +90,19 @@ publishing {
                 asNode().appendNode('packaging', 'jar')
                 def dependencies = asNode().appendNode('dependencies')
                 addDependency(dependencies, 'org.eclipse.persistence', 'javax.persistence', '2.2.1')
-                addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.asm', originalVersion)
+                addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.asm', artifactVersion)
                 addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.antlr', originalVersion)
                 addDependency(dependencies, 'javax.json', 'javax.json-api', '1.1.2')
                 addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.jpa.jpql', originalVersion)
                 addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.core', artifactVersion)
+            }
+        }
+        asm(MavenPublication) {
+            artifact file("plugins/org.eclipse.persistence.asm_7.0.0.v201811131354.jar")
+            artifactId 'org.eclipse.persistence.asm'
+            artifact source: file("plugins/org.eclipse.persistence.asm.source_7.0.0.v201811131354.jar"), classifier: 'sources'
+            pom.withXml {
+                asNode().appendNode('packaging', 'jar')
             }
         }
     }
