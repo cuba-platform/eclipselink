@@ -1494,11 +1494,45 @@ public class InheritancePolicy extends CoreInheritancePolicy<AbstractRecord, Abs
             throw QueryException.noDescriptorForClassFromInheritancePolicy(query, concreteClass);
         }
 
+        //cuba begin
+
+        // joinedMappingIndexes contains Integer indexes corresponding to the number of fields
+        // to which the query reference class is mapped, for instance:
+        // referenceClass = SmallProject => joinedMappingIndexes(0) = 6;
+        // referenceClass = LargeProject => joinedMappingIndexes(0) = 8;
+        // This information should be preserved in the main query against the parent class,
+        // therefore in this case joinedMappedIndexes contains a Map of classes to Integers:
+        // referenceClass = Project => joinedMappingIndexes(0) = Map {SmallProject -> 6; LargeProject -> 8}.
+        Map<DatabaseMapping, Object> joinedMappingIndexes = null;
+        if (query.hasJoining()) {
+            joinedMappingIndexes = new HashMap<>();
+        }
+        //cuba end
+
         ReadObjectQuery concreteQuery = (ReadObjectQuery)query.clone();
         concreteQuery.setReferenceClass(concreteClass);
         concreteQuery.setDescriptor(concreteDescriptor);
 
         AbstractRecord resultRow = ((ExpressionQueryMechanism)concreteQuery.getQueryMechanism()).selectOneRowFromConcreteTable();
+
+        //cuba begin
+        if (joinedMappingIndexes != null) {
+            // Need to set mapping index for each select, as each row size is different.
+            for (Map.Entry<DatabaseMapping, Object> entry :
+                    concreteQuery.getJoinedAttributeManager().getJoinedMappingIndexes_().entrySet()) {
+                HashMap mappingIndexes = (HashMap) joinedMappingIndexes.get(entry.getKey());
+                if (mappingIndexes == null) {
+                    mappingIndexes = new HashMap();
+                    mappingIndexes.put(concreteClass, entry.getValue());
+                    joinedMappingIndexes.put(entry.getKey(), mappingIndexes);
+                }
+            }
+        }
+
+        if (joinedMappingIndexes != null) {
+            query.getJoinedAttributeManager().setJoinedMappingIndexes_(joinedMappingIndexes);
+        }
+        //cuba end
 
         return resultRow;
     }
