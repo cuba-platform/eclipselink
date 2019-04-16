@@ -1728,6 +1728,9 @@ public class SQLSelectStatement extends SQLStatement {
             Vector selectFields = null;
             printer.setRequiresDistinct(shouldDistinctBeUsed());
 
+            DatabasePlatform.HintPosition hintPosition = printer.getPlatform().getHintPosition();
+            String hint = getHintString();
+
             if (hasUnionExpressions()) {
                 // Ensure union order using brackets.
                 int size = getUnionExpressions().size();
@@ -1735,12 +1738,23 @@ public class SQLSelectStatement extends SQLStatement {
                     printer.printString("(");
                 }
             }
-            printer.printString("SELECT ");
 
-            if (getHintString() != null) {
-                printer.printString(getHintString());
+            //CUBA begin
+            if (hintPosition == DatabasePlatform.HintPosition.BEFORE_QUERY && hint != null) {
+                printer.printString(" ");
+                printer.printString(hint);
                 printer.printString(" ");
             }
+            //CUBA end
+
+            printer.printString("SELECT ");
+
+            //CUBA begin
+            if (hintPosition == DatabasePlatform.HintPosition.INSIDE_QUERY && hint != null) {
+                printer.printString(hint);
+                printer.printString(" ");
+            }
+            //CUBA end
 
             if (shouldDistinctBeUsed()) {
                 printer.printString("DISTINCT ");
@@ -1778,6 +1792,14 @@ public class SQLSelectStatement extends SQLStatement {
                 // For pessimistic locking.
                 appendForUpdateClause(printer);
             }
+
+            //CUBA begin
+            if (hintPosition == DatabasePlatform.HintPosition.AFTER_QUERY && hint != null) {
+                printer.printString(" ");
+                printer.printString(hint);
+                printer.printString(" ");
+            }
+            //CUBA end
 
             if (hasUnionExpressions()) {
                 appendUnionClauseToWriter(printer);

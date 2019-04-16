@@ -732,4 +732,11 @@ public class SQLServerPlatform extends org.eclipse.persistence.platform.database
         writer.write(tempTableName);
         writeAutoJoinWhereClause(writer, tableName, tempTableName, pkFields, this);
     }
+
+    //CUBA begin
+    @Override
+    public HintPosition getHintPosition() {
+        return HintPosition.AFTER_QUERY;
+    }
+    //CUBA end
 }
