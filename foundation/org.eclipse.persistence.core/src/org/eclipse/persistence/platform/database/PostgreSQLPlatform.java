@@ -627,4 +627,8 @@ public class PostgreSQLPlatform extends DatabasePlatform {
         return call;
     }
 
+    @Override
+    public HintPosition getHintPosition() {
+        return HintPosition.BEFORE_QUERY;
+    }
 }
