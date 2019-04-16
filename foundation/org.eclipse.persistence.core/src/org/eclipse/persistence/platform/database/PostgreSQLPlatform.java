@@ -656,4 +656,8 @@ public class PostgreSQLPlatform extends DatabasePlatform {
             statement.setNull(index, jdbcType);
         }
     }
+    @Override
+    public HintPosition getHintPosition() {
+        return HintPosition.BEFORE_QUERY;
+    }
 }
