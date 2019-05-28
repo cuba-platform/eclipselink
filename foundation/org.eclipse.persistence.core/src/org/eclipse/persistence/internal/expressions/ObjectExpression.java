@@ -14,17 +14,20 @@
 //     Oracle - initial API and implementation from Oracle TopLink
 package org.eclipse.persistence.internal.expressions;
 
-import java.util.*;
-
-import org.eclipse.persistence.exceptions.*;
-import org.eclipse.persistence.mappings.querykeys.*;
-import org.eclipse.persistence.expressions.*;
-import org.eclipse.persistence.internal.helper.*;
-import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
+import org.eclipse.persistence.exceptions.QueryException;
+import org.eclipse.persistence.expressions.Expression;
+import org.eclipse.persistence.internal.helper.DatabaseField;
+import org.eclipse.persistence.internal.helper.DatabaseTable;
+import org.eclipse.persistence.internal.helper.Helper;
+import org.eclipse.persistence.internal.helper.NonSynchronizedVector;
+import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.mappings.DatabaseMapping;
+import org.eclipse.persistence.mappings.querykeys.ForeignReferenceQueryKey;
 import org.eclipse.persistence.queries.ObjectLevelReadQuery;
 import org.eclipse.persistence.queries.ReadQuery;
+
+import java.util.*;
 
 /**
  * Superclass for any object type expressions.
@@ -269,13 +272,22 @@ public abstract class ObjectExpression extends DataExpression {
      * Return true if treat was used on this expression
      */
     public boolean isTreatUsed() {
-        if  (this.hasDerivedExpressions() )
-            for (Expression exp: this.derivedExpressions) {
-                if (exp.isTreatExpression()) {
-                    return true;
+        //CUBA begin
+        List<Expression> derivedExpressionsCopy;
+        synchronized (this) {
+            if (derivedExpressions != null) {
+                derivedExpressionsCopy = new ArrayList<>(this.derivedExpressions);
+            } else {
+                return false;
+            }
+        }
+        for (Expression exp : derivedExpressionsCopy) {
+            if (exp.isTreatExpression()) {
+                return true;
             }
         }
         return false;
+        //CUBA end
     }
 
     /**
