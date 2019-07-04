@@ -848,12 +848,14 @@ public class QueryKeyExpression extends ObjectExpression {
                     }
                 }
                 //CUBA begin
-                Expression additionalExpressionCriteria = additionalExpressionCriteria();
-                if (additionalExpressionCriteria != null) {
-                    if (getOnClause() != null) {
-                        setOnClause(getOnClause().and(additionalExpressionCriteria));
-                    } else {
-                        setOnClause(additionalExpressionCriteria);
+                if (!shouldUseOuterJoin() && !getSession().getPlatform().shouldPrintInnerJoinInWhereClause()) {
+                    Expression additionalExpressionCriteria = additionalExpressionCriteria();
+                    if (additionalExpressionCriteria != null) {
+                        if (getOnClause() != null) {
+                            setOnClause(getOnClause().and(additionalExpressionCriteria));
+                        } else {
+                            setOnClause(additionalExpressionCriteria);
+                        }
                     }
                 }
                 //CUBA end
