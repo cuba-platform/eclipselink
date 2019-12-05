@@ -196,7 +196,8 @@ public class TransformerFactory {
                 List unMappedAttributes = storeAttributeMappings(metaClass, classDetails, descriptor.getMappings(), weaveValueHoldersForClass);
                 classDetailsMap.put(classDetails.getClassName() ,classDetails);
 
-                classDetails.setShouldWeaveConstructorOptimization((classDetails.getDescribedClass().getFields().size() - (descriptor.getMappings().size() - unMappedAttributes.size()))<=0);
+                //classDetails.setShouldWeaveConstructorOptimization((classDetails.getDescribedClass().getFields().size() - (descriptor.getMappings().size() - unMappedAttributes.size()))<=0);
+                classDetails.setShouldWeaveConstructorOptimization(false);
 
                 if (classDetails.getSuperClassName() != null) {
                     addClassDetailsForMappedSuperClasses(metaClass, descriptor, classDetails, classDetailsMap, unMappedAttributes, weaveChangeTracking);

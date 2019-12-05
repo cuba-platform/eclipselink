@@ -61,7 +61,7 @@ public class ClassDetails {
     /** Determine if this class specifically implements a clone method */
     protected boolean implementsCloneMethod = false;
     /** Determine if a new constructor can be used to bypass setting variables to default values. */
-    protected boolean shouldWeaveConstructorOptimization = true;
+    protected boolean shouldWeaveConstructorOptimization = false;
     /** The methods that are used by virtual attributes as getter methods.
      * These will be used by our weaver to properly weave those methods
      * This list should be kept in sync with virtualSetMethodNames. Every time
