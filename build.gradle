@@ -1,5 +1,5 @@
-def artifactVersion = '2.7.3-6-cuba'
-def originalVersion = '2.7.3'
+def artifactVersion = '2.7.5-1-cuba'
+def originalVersion = '2.7.5'
 if (rootProject.hasProperty('buildVersion')) {
     artifactVersion = rootProject['buildVersion']
 }
@@ -79,7 +79,6 @@ publishing {
                 asNode().appendNode('packaging', 'jar')
                 def dependencies = asNode().appendNode('dependencies')
                 addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.asm', originalVersion)
-                addDependency(dependencies, 'javax.json', 'javax.json-api', '1.1.2')
             }
         }
         jpa(MavenPublication) {
@@ -89,10 +88,9 @@ publishing {
             pom.withXml {
                 asNode().appendNode('packaging', 'jar')
                 def dependencies = asNode().appendNode('dependencies')
-                addDependency(dependencies, 'org.eclipse.persistence', 'javax.persistence', '2.2.1')
+                addDependency(dependencies, 'org.eclipse.persistence', 'jakarta.persistence', '2.2.3')
                 addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.asm', originalVersion)
                 addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.antlr', originalVersion)
-                addDependency(dependencies, 'javax.json', 'javax.json-api', '1.1.2')
                 addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.jpa.jpql', originalVersion)
                 addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.core', artifactVersion)
             }
