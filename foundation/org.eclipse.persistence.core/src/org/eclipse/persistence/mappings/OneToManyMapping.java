@@ -52,15 +52,7 @@ import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.internal.sessions.ObjectChangeSet;
 import org.eclipse.persistence.internal.sessions.UnitOfWorkImpl;
 import org.eclipse.persistence.mappings.foundation.MapComponentMapping;
-import org.eclipse.persistence.queries.DataModifyQuery;
-import org.eclipse.persistence.queries.DeleteAllQuery;
-import org.eclipse.persistence.queries.DeleteObjectQuery;
-import org.eclipse.persistence.queries.InsertObjectQuery;
-import org.eclipse.persistence.queries.ModifyQuery;
-import org.eclipse.persistence.queries.ObjectBuildingQuery;
-import org.eclipse.persistence.queries.ObjectLevelModifyQuery;
-import org.eclipse.persistence.queries.ObjectLevelReadQuery;
-import org.eclipse.persistence.queries.WriteObjectQuery;
+import org.eclipse.persistence.queries.*;
 import org.eclipse.persistence.sessions.DatabaseRecord;
 
 /**
