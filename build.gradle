@@ -20,6 +20,7 @@ def uploadPassword = project.hasProperty('uploadPassword') ? project.uploadPassw
 
 repositories {
     mavenLocal()
+    jcenter()
     maven {
         credentials {
             username repositoryUser
