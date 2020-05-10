@@ -1,5 +1,5 @@
-def artifactVersion = '2.7.5-1-cuba'
-def originalVersion = '2.7.5'
+def artifactVersion = '2.7.7-1-jmix'
+def originalVersion = '2.7.7'
 if (rootProject.hasProperty('buildVersion')) {
     artifactVersion = rootProject['buildVersion']
 }
