@@ -24,19 +24,6 @@
 //       - 474752: Address NPE for Embeddable with 1-M association
 package org.eclipse.persistence.mappings;
 
-import java.security.AccessController;
-import java.security.PrivilegedActionException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Vector;
-
 import org.eclipse.persistence.annotations.BatchFetchType;
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.descriptors.partitioning.PartitioningPolicy;
@@ -54,68 +41,60 @@ import org.eclipse.persistence.internal.descriptors.InstanceVariableAttributeAcc
 import org.eclipse.persistence.internal.descriptors.MethodAttributeAccessor;
 import org.eclipse.persistence.internal.expressions.ForUpdateOfClause;
 import org.eclipse.persistence.internal.expressions.ObjectExpression;
-import org.eclipse.persistence.internal.helper.ClassConstants;
-import org.eclipse.persistence.internal.helper.DatabaseField;
-import org.eclipse.persistence.internal.helper.Helper;
-import org.eclipse.persistence.internal.helper.NonSynchronizedSubVector;
-import org.eclipse.persistence.internal.helper.NonSynchronizedVector;
+import org.eclipse.persistence.internal.helper.*;
 import org.eclipse.persistence.internal.identitymaps.CacheId;
 import org.eclipse.persistence.internal.identitymaps.CacheKey;
-import org.eclipse.persistence.internal.indirection.BasicIndirectionPolicy;
-import org.eclipse.persistence.internal.indirection.ContainerIndirectionPolicy;
-import org.eclipse.persistence.internal.indirection.DatabaseValueHolder;
-import org.eclipse.persistence.internal.indirection.IndirectionPolicy;
-import org.eclipse.persistence.internal.indirection.NoIndirectionPolicy;
-import org.eclipse.persistence.internal.indirection.WeavedObjectBasicIndirectionPolicy;
+import org.eclipse.persistence.internal.indirection.*;
 import org.eclipse.persistence.internal.queries.AttributeItem;
 import org.eclipse.persistence.internal.queries.JoinedAttributeManager;
 import org.eclipse.persistence.internal.security.PrivilegedAccessHelper;
 import org.eclipse.persistence.internal.security.PrivilegedClassForName;
-import org.eclipse.persistence.internal.sessions.AbstractRecord;
-import org.eclipse.persistence.internal.sessions.AbstractSession;
-import org.eclipse.persistence.internal.sessions.ChangeRecord;
-import org.eclipse.persistence.internal.sessions.MergeManager;
-import org.eclipse.persistence.internal.sessions.UnitOfWorkChangeSet;
-import org.eclipse.persistence.internal.sessions.UnitOfWorkImpl;
+import org.eclipse.persistence.internal.sessions.*;
 import org.eclipse.persistence.internal.sessions.remote.RemoteSessionController;
 import org.eclipse.persistence.internal.sessions.remote.RemoteValueHolder;
 import org.eclipse.persistence.logging.SessionLog;
-import org.eclipse.persistence.queries.BatchFetchPolicy;
-import org.eclipse.persistence.queries.Call;
-import org.eclipse.persistence.queries.DatabaseQuery;
-import org.eclipse.persistence.queries.FetchGroup;
-import org.eclipse.persistence.queries.ObjectBuildingQuery;
-import org.eclipse.persistence.queries.ObjectLevelModifyQuery;
-import org.eclipse.persistence.queries.ObjectLevelReadQuery;
-import org.eclipse.persistence.queries.ReadAllQuery;
-import org.eclipse.persistence.queries.ReadObjectQuery;
-import org.eclipse.persistence.queries.ReadQuery;
-import org.eclipse.persistence.queries.ReportQuery;
+import org.eclipse.persistence.queries.*;
 import org.eclipse.persistence.sessions.DatabaseRecord;
 import org.eclipse.persistence.sessions.remote.DistributedSession;
+
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.util.*;
 
 /**
  * <b>Purpose</b>: Abstract class for relationship mappings
  */
 public abstract class ForeignReferenceMapping extends DatabaseMapping {
 
-    /** Query parameter name used for IN batch ids. */
+    /**
+     * Query parameter name used for IN batch ids.
+     */
     public static final String QUERY_BATCH_PARAMETER = "query-batch-parameter";
 
-    /** This is used only in descriptor proxy in remote session */
+    /**
+     * This is used only in descriptor proxy in remote session
+     */
     protected Class referenceClass;
     protected String referenceClassName;
 
-    /** The session is temporarily used for initialization. Once used, it is set to null */
+    /**
+     * The session is temporarily used for initialization. Once used, it is set to null
+     */
     protected transient AbstractSession tempInitSession;
 
-    /** The descriptor of the reference class. */
+    /**
+     * The descriptor of the reference class.
+     */
     protected transient ClassDescriptor referenceDescriptor;
 
-    /** This query is used to read referenced objects for this mapping. */
+    /**
+     * This query is used to read referenced objects for this mapping.
+     */
     protected ReadQuery selectionQuery;
 
-    /** Indicates whether the referenced object is privately owned or not. */
+    /**
+     * Indicates whether the referenced object is privately owned or not.
+     */
     protected boolean isPrivateOwned;
 
     /**
@@ -124,38 +103,60 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
      */
     protected BatchFetchType batchFetchType;
 
-    /** Implements indirection behavior */
+    /**
+     * Implements indirection behavior
+     */
     protected IndirectionPolicy indirectionPolicy;
 
-    /** Indicates whether the selection query is TopLink generated or defined by the user. */
+    /**
+     * Indicates whether the selection query is TopLink generated or defined by the user.
+     */
     protected transient boolean hasCustomSelectionQuery;
 
-    /** Used to reference the other half of a bi-directional relationship. */
+    /**
+     * Used to reference the other half of a bi-directional relationship.
+     */
     protected DatabaseMapping relationshipPartner;
 
-    /** Set by users, used to retrieve the backpointer for this mapping */
+    /**
+     * Set by users, used to retrieve the backpointer for this mapping
+     */
     protected String relationshipPartnerAttributeName;
 
-    /** Cascading flags used by the EntityManager */
+    /**
+     * Cascading flags used by the EntityManager
+     */
     protected boolean cascadePersist;
     protected boolean cascadeMerge;
     protected boolean cascadeRefresh;
     protected boolean cascadeRemove;
     protected boolean cascadeDetach;
 
-    /** Flag used to determine if we need to weave the transient annotation on weaved fields.*/
+    /**
+     * Flag used to determine if we need to weave the transient annotation on weaved fields.
+     */
     protected boolean requiresTransientWeavedFields;
 
-    /** Define if the relationship should always be join fetched. */
+    /**
+     * Define if the relationship should always be join fetched.
+     */
     protected int joinFetch = NONE;
-    /** Specify any INNER join on a join fetch. */
+    /**
+     * Specify any INNER join on a join fetch.
+     */
     public static final int INNER_JOIN = 1;
-    /** Specify any OUTER join on a join fetch. */
+    /**
+     * Specify any OUTER join on a join fetch.
+     */
     public static final int OUTER_JOIN = 2;
-    /** Specify no join fetch, this is the default. */
+    /**
+     * Specify no join fetch, this is the default.
+     */
     public static final int NONE = 0;
 
-    /** This is a way (after cloning) to force the initialization of the selection criteria */
+    /**
+     * This is a way (after cloning) to force the initialization of the selection criteria
+     */
     protected boolean forceInitializationOfSelectionCriteria;
 
     /**
@@ -171,18 +172,27 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
         // should be extended in a dedicated query (which doesn't do anything else).
         DEDICATED_QUERY
     }
+
     ExtendPessimisticLockScope extendPessimisticLockScope;
 
-    /** Support delete cascading on the database relationship constraint. */
+    /**
+     * Support delete cascading on the database relationship constraint.
+     */
     protected boolean isCascadeOnDeleteSetOnDatabase;
 
-    /** Allow the mapping's queries to be targeted at specific connection pools. */
+    /**
+     * Allow the mapping's queries to be targeted at specific connection pools.
+     */
     protected PartitioningPolicy partitioningPolicy;
 
-    /** Allow the mapping's queries to be targeted at specific connection pools. */
+    /**
+     * Allow the mapping's queries to be targeted at specific connection pools.
+     */
     protected String partitioningPolicyName;
 
-    /** Stores JPA metadata about whether another mapping is the owning mapping.  Only populated for JPA models **/
+    /**
+     * Stores JPA metadata about whether another mapping is the owning mapping.  Only populated for JPA models
+     **/
     protected String mappedBy;
 
     protected ForeignReferenceMapping() {
@@ -259,7 +269,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
      * result of the batch query in the original query to allow the other objects to share the results.
      */
     protected Object batchedValueFromRow(AbstractRecord row, ObjectLevelReadQuery query, CacheKey parentCacheKey) {
-        ReadQuery batchQuery = (ReadQuery)query.getProperty(this);
+        ReadQuery batchQuery = (ReadQuery) query.getProperty(this);
         if (batchQuery == null) {
             if (query.hasBatchReadAttributes()) {
                 Map<DatabaseMapping, ReadQuery> queries = query.getBatchFetchPolicy().getMappingQueries();
@@ -271,7 +281,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
                 batchQuery = prepareNestedBatchQuery(query);
                 batchQuery.setIsExecutionClone(true);
             } else {
-                batchQuery = (ReadQuery)batchQuery.clone();
+                batchQuery = (ReadQuery) batchQuery.clone();
                 batchQuery.setIsExecutionClone(true);
             }
             query.setProperty(this, batchQuery);
@@ -305,11 +315,11 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
     @Override
     public void buildClone(Object original, CacheKey cacheKey, Object clone, Integer refreshCascade, AbstractSession cloningSession) {
         Object attributeValue = null;
-        if (!this.isCacheable && (cacheKey != null && !cacheKey.isIsolated())){
+        if (!this.isCacheable && (cacheKey != null && !cacheKey.isIsolated())) {
             ReadObjectQuery query = new ReadObjectQuery(descriptor.getJavaClass());
             query.setSession(cloningSession);
             attributeValue = valueFromRow(cacheKey.getProtectedForeignKeys(), null, query, cacheKey, cloningSession, true, null);
-        }else{
+        } else {
             attributeValue = getAttributeValueFromObject(original);
         }
         attributeValue = this.indirectionPolicy.cloneAttribute(attributeValue, original, cacheKey, clone, refreshCascade, cloningSession, false); // building clone from an original not a row.
@@ -338,20 +348,20 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
     public void buildCloneFromRow(AbstractRecord databaseRow, JoinedAttributeManager joinManager, Object clone, CacheKey sharedCacheKey, ObjectBuildingQuery sourceQuery, UnitOfWorkImpl unitOfWork, AbstractSession executionSession) {
         Boolean[] wasCacheUsed = new Boolean[]{Boolean.FALSE};
         Object attributeValue = valueFromRow(databaseRow, joinManager, sourceQuery, sharedCacheKey, executionSession, true, wasCacheUsed);
-        Object clonedAttributeValue = this.indirectionPolicy.cloneAttribute(attributeValue, null, sharedCacheKey,clone, null, unitOfWork, !wasCacheUsed[0]);// building clone directly from row.
-        if (executionSession.isUnitOfWork() && sourceQuery.shouldRefreshIdentityMapResult()){
+        Object clonedAttributeValue = this.indirectionPolicy.cloneAttribute(attributeValue, null, sharedCacheKey, clone, null, unitOfWork, !wasCacheUsed[0]);// building clone directly from row.
+        if (executionSession.isUnitOfWork() && sourceQuery.shouldRefreshIdentityMapResult()) {
             // check whether the attribute is fully build before calling getAttributeValueFromObject because that
             // call may fully build the attribute
             boolean wasAttributeValueFullyBuilt = isAttributeValueFullyBuilt(clone);
             Object oldAttribute = this.getAttributeValueFromObject(clone);
             setAttributeValueInObject(clone, clonedAttributeValue); // set this first to prevent infinite recursion
-             if (wasAttributeValueFullyBuilt && this.indirectionPolicy.objectIsInstantiatedOrChanged(oldAttribute)){
+            if (wasAttributeValueFullyBuilt && this.indirectionPolicy.objectIsInstantiatedOrChanged(oldAttribute)) {
                 this.indirectionPolicy.instantiateObject(clone, clonedAttributeValue);
             }
-        }else{
+        } else {
             setAttributeValueInObject(clone, clonedAttributeValue);
         }
-        if((joinManager != null && joinManager.isAttributeJoined(this.descriptor, this)) || (isExtendingPessimisticLockScope(sourceQuery) && extendPessimisticLockScope == ExtendPessimisticLockScope.TARGET_QUERY) || databaseRow.hasSopObject()) {
+        if ((joinManager != null && joinManager.isAttributeJoined(this.descriptor, this)) || (isExtendingPessimisticLockScope(sourceQuery) && extendPessimisticLockScope == ExtendPessimisticLockScope.TARGET_QUERY) || databaseRow.hasSopObject()) {
             // need to instantiate to extended the lock beyond the source object table(s).
             this.indirectionPolicy.instantiateObject(clone, clonedAttributeValue);
         }
@@ -377,10 +387,10 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
      */
     @Override
     public Object clone() {
-        ForeignReferenceMapping clone = (ForeignReferenceMapping)super.clone();
+        ForeignReferenceMapping clone = (ForeignReferenceMapping) super.clone();
 
-        clone.setIndirectionPolicy((IndirectionPolicy)indirectionPolicy.clone());
-        clone.setSelectionQuery((ReadQuery)getSelectionQuery().clone());
+        clone.setIndirectionPolicy((IndirectionPolicy) indirectionPolicy.clone());
+        clone.setSelectionQuery((ReadQuery) getSelectionQuery().clone());
 
         return clone;
     }
@@ -423,14 +433,14 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
      * with class names to a project with classes.
      */
     @Override
-    public void convertClassNamesToClasses(ClassLoader classLoader){
+    public void convertClassNamesToClasses(ClassLoader classLoader) {
         super.convertClassNamesToClasses(classLoader);
 
         // DirectCollection mappings don't require a reference class.
         if (getReferenceClassName() != null) {
             Class referenceClass = null;
-            try{
-                if (PrivilegedAccessHelper.shouldUsePrivilegedAccess()){
+            try {
+                if (PrivilegedAccessHelper.shouldUsePrivilegedAccess()) {
                     try {
                         referenceClass = AccessController.doPrivileged(new PrivilegedClassForName(getReferenceClassName(), true, classLoader));
                     } catch (PrivilegedActionException exception) {
@@ -439,7 +449,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
                 } else {
                     referenceClass = PrivilegedAccessHelper.getClassForName(getReferenceClassName(), true, classLoader);
                 }
-            } catch (ClassNotFoundException exc){
+            } catch (ClassNotFoundException exc) {
                 throw ValidationException.classNotFoundWhileConvertingClassNames(getReferenceClassName(), exc);
             }
             setReferenceClass(referenceClass);
@@ -453,9 +463,10 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
      * INTERNAL:
      * Builder the unit of work value holder.
      * Ignore the original object.
+     *
      * @param buildDirectlyFromRow indicates that we are building the clone directly
-     * from a row as opposed to building the original from the row, putting it in
-     * the shared cache, and then cloning the original.
+     *                             from a row as opposed to building the original from the row, putting it in
+     *                             the shared cache, and then cloning the original.
      */
     @Override
     public DatabaseValueHolder createCloneValueHolder(ValueHolderInterface attributeValue, Object original, Object clone, AbstractRecord row, AbstractSession cloningSession, boolean buildDirectlyFromRow) {
@@ -522,7 +533,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
      * Called if shouldExtendPessimisticLockScopeInSourceQuery is true.
      * Adds fields to be locked to the where clause of the source query.
      * Note that the sourceQuery must be ObjectLevelReadQuery so that it has ExpressionBuilder.
-     *
+     * <p>
      * This method must be implemented in subclasses that allow
      * setting shouldExtendPessimisticLockScopeInSourceQuery to true.
      */
@@ -558,7 +569,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
                 result = batchedObjects.get(sourceKey);
                 if (result == Helper.NULL_VALUE) {
                     return null;
-                // If IN may not have that batch yet, or it may have been null.
+                    // If IN may not have that batch yet, or it may have been null.
                 } else if ((result != null) || (!originalPolicy.isIN())) {
                     return result;
                 }
@@ -613,7 +624,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
                                 if (foreignKeys.contains(foreignKey)) {
                                     count--;
                                 } else {
-                                    Object[] key = ((CacheId)foreignKey).getPrimaryKey();
+                                    Object[] key = ((CacheId) foreignKey).getPrimaryKey();
                                     Object foreignKeyValue = key[0];
                                     // Support composite keys using nested IN.
                                     if (key.length > 1) {
@@ -647,7 +658,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
                 for (Object foreignKey : foreignKeys) {
                     batchedObjects.put(foreignKey, Helper.NULL_VALUE);
                 }
-            } else if (batchQuery.isReadAllQuery() && ((ReadAllQuery)batchQuery).getBatchFetchPolicy().isIN()) {
+            } else if (batchQuery.isReadAllQuery() && ((ReadAllQuery) batchQuery).getBatchFetchPolicy().isIN()) {
                 throw QueryException.originalQueryMustUseBatchIN(this, originalQuery);
             }
             executeBatchQuery(batchQuery, parentCacheKey, batchedObjects, session, translationRow);
@@ -706,12 +717,12 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
      */
     public ObjectLevelReadQuery prepareNestedJoins(JoinedAttributeManager joinManager, ObjectBuildingQuery baseQuery, AbstractSession session) {
         // A nested query must be built to pass to the descriptor that looks like the real query execution would.
-        ObjectLevelReadQuery nestedQuery = (ObjectLevelReadQuery)((ObjectLevelReadQuery)getSelectionQuery()).deepClone();
+        ObjectLevelReadQuery nestedQuery = (ObjectLevelReadQuery) ((ObjectLevelReadQuery) getSelectionQuery()).deepClone();
         nestedQuery.setSession(session);
         nestedQuery.setShouldUseSerializedObjectPolicy(baseQuery.shouldUseSerializedObjectPolicy());
         // Must cascade for nested partial/join attributes, the expressions must be filter to only the nested ones.
         if (baseQuery.hasPartialAttributeExpressions()) {
-            nestedQuery.setPartialAttributeExpressions(extractNestedExpressions(((ObjectLevelReadQuery)baseQuery).getPartialAttributeExpressions(), nestedQuery.getExpressionBuilder()));
+            nestedQuery.setPartialAttributeExpressions(extractNestedExpressions(((ObjectLevelReadQuery) baseQuery).getPartialAttributeExpressions(), nestedQuery.getExpressionBuilder()));
             // bug 5501751: USING GETALLOWINGNULL() WITH ADDPARTIALATTRIBUTE() BROKEN IN 10.1.3
             // The query against Employee with
             //   query.addPartialAttribute(builder.getAllowingNull("address"));
@@ -719,13 +730,13 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
             // Note that in case
             //   query.addPartialAttribute(builder.getAllowingNull("address").get("city"));
             // in case there's no address an empty Address object (all atributes are nulls) is returned.
-            if(nestedQuery.getPartialAttributeExpressions().isEmpty()) {
-                if(hasRootExpressionThatShouldUseOuterJoin(((ObjectLevelReadQuery)baseQuery).getPartialAttributeExpressions())) {
+            if (nestedQuery.getPartialAttributeExpressions().isEmpty()) {
+                if (hasRootExpressionThatShouldUseOuterJoin(((ObjectLevelReadQuery) baseQuery).getPartialAttributeExpressions())) {
                     nestedQuery.setShouldBuildNullForNullPk(true);
                 }
             }
         } else {
-            if(nestedQuery.getDescriptor().hasFetchGroupManager()) {
+            if (nestedQuery.getDescriptor().hasFetchGroupManager()) {
                 FetchGroup sourceFG = baseQuery.getExecutionFetchGroup();
                 if (sourceFG != null) {
                     FetchGroup targetFetchGroup = sourceFG.getGroup(getAttributeName());
@@ -751,12 +762,12 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
             }
             // Configure nested locking clause.
             if (baseQuery.isLockQuery()) {
-                if (((ObjectLevelReadQuery)baseQuery).getLockingClause().isForUpdateOfClause()) {
-                    ForUpdateOfClause clause = (ForUpdateOfClause)((ObjectLevelReadQuery)baseQuery).getLockingClause().clone();
+                if (((ObjectLevelReadQuery) baseQuery).getLockingClause().isForUpdateOfClause()) {
+                    ForUpdateOfClause clause = (ForUpdateOfClause) ((ObjectLevelReadQuery) baseQuery).getLockingClause().clone();
                     clause.setLockedExpressions(extractNestedNonAggregateExpressions(clause.getLockedExpressions(), nestedQuery.getExpressionBuilder(), true));
                     nestedQuery.setLockingClause(clause);
                 } else {
-                    nestedQuery.setLockingClause(((ObjectLevelReadQuery)baseQuery).getLockingClause());
+                    nestedQuery.setLockingClause(((ObjectLevelReadQuery) baseQuery).getLockingClause());
                 }
             }
         }
@@ -794,8 +805,8 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
 
         // For flashback: Must still propagate all properties, as the
         // attributes of this joined attribute may be read later too.
-        if (baseQuery.isObjectLevelReadQuery() && ((ObjectLevelReadQuery)baseQuery).hasAsOfClause()) {
-            nestedQuery.setAsOfClause(((ObjectLevelReadQuery)baseQuery).getAsOfClause());
+        if (baseQuery.isObjectLevelReadQuery() && ((ObjectLevelReadQuery) baseQuery).hasAsOfClause()) {
+            nestedQuery.setAsOfClause(((ObjectLevelReadQuery) baseQuery).getAsOfClause());
         }
         nestedQuery.setCascadePolicy(baseQuery.getCascadePolicy());
         if (nestedQuery.hasJoining()) {
@@ -943,9 +954,9 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
         ReadQuery mappingQuery = this.selectionQuery;
         if (mappingQuery.isReadAllQuery()) {
             // CR#3238 clone these vectors so they will not grow with each call to the query. -TW
-            batchQuery.setOrderByExpressions(new ArrayList<Expression>(((ReadAllQuery)mappingQuery).getOrderByExpressions()));
-            if (((ReadAllQuery)mappingQuery).hasBatchReadAttributes()) {
-                for (Expression expression : ((ReadAllQuery)mappingQuery).getBatchReadAttributeExpressions()) {
+            batchQuery.setOrderByExpressions(new ArrayList<Expression>(((ReadAllQuery) mappingQuery).getOrderByExpressions()));
+            if (((ReadAllQuery) mappingQuery).hasBatchReadAttributes()) {
+                for (Expression expression : ((ReadAllQuery) mappingQuery).getBatchReadAttributeExpressions()) {
                     batchQuery.addBatchReadAttribute(expression);
                 }
             }
@@ -984,7 +995,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
             if (sourceFetchGroup != null) {
                 FetchGroup targetFetchGroup = sourceFetchGroup.getGroup(getAttributeName());
                 if (targetFetchGroup != null) {
-                    ((ObjectLevelReadQuery)batchQuery).setFetchGroup(targetFetchGroup);
+                    ((ObjectLevelReadQuery) batchQuery).setFetchGroup(targetFetchGroup);
                 }
             }
         }
@@ -1034,10 +1045,10 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
      */
     public Object getAttributeValueWithClonedValueHolders(Object object) {
         Object attributeValue = getAttributeValueFromObject(object);
-        if (attributeValue instanceof DatabaseValueHolder){
-            return ((DatabaseValueHolder)attributeValue).clone();
-        } else if (attributeValue instanceof ValueHolder){
-            return ((ValueHolder)attributeValue).clone();
+        if (attributeValue instanceof DatabaseValueHolder) {
+            return ((DatabaseValueHolder) attributeValue).clone();
+        } else if (attributeValue instanceof ValueHolder) {
+            return ((ValueHolder) attributeValue).clone();
         }
         return attributeValue;
     }
@@ -1129,7 +1140,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
      * Return whether this mapping should be traversed when we are locking.
      */
     @Override
-    public boolean isLockableMapping(){
+    public boolean isLockableMapping() {
         return !(this.usesIndirection()) && !referenceDescriptor.getCachePolicy().isIsolated();
     }
 
@@ -1194,7 +1205,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
 
     /**
      * PUBLIC:
-     *  Use this method retrieve the relationship partner attribute name of this bidirectional Mapping.
+     * Use this method retrieve the relationship partner attribute name of this bidirectional Mapping.
      */
     public String getRelationshipPartnerAttributeName() {
         return this.relationshipPartnerAttributeName;
@@ -1268,10 +1279,10 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
             Class attributeType = getAttributeAccessor().getAttributeClass();
             // Check that not already weaved or coded.
             if (!(ClassConstants.ValueHolderInterface_Class.isAssignableFrom(attributeType))) {
-                if (!indirectionPolicy.isWeavedObjectBasicIndirectionPolicy()){
-                    if(getAttributeAccessor().isMethodAttributeAccessor()) {
+                if (!indirectionPolicy.isWeavedObjectBasicIndirectionPolicy()) {
+                    if (getAttributeAccessor().isMethodAttributeAccessor()) {
                         useWeavedIndirection(getGetMethodName(), getSetMethodName(), true);
-                    } else if(getAttributeAccessor().isInstanceVariableAttributeAccessor()) {
+                    } else if (getAttributeAccessor().isInstanceVariableAttributeAccessor()) {
                         useWeavedIndirection(Helper.getWeavedGetMethodName(getAttributeName()), Helper.getWeavedSetMethodName(getAttributeName()), false);
                     }
                 }
@@ -1344,11 +1355,12 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
      * The method validateAttributeOfInstantiatedObject(Object attributeValue) fixes the value of the attributeValue
      * in cases where it is null and indirection requires that it contain some specific data structure.  Return whether this will happen.
      * This method is used to help determine if indirection has been triggered
+     *
      * @param object
      * @return
      * @see org.eclipse.persistence.internal.indirection.IndirectionPolicy#validateAttributeOfInstantiatedObject(Object)
      */
-    public boolean isAttributeValueFullyBuilt(Object object){
+    public boolean isAttributeValueFullyBuilt(Object object) {
         Object attributeValue = super.getAttributeValueFromObject(object);
         return this.indirectionPolicy.isAttributeValueFullyBuilt(attributeValue);
     }
@@ -1357,7 +1369,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
      * A subclass should implement this method if it wants non default behavior.
      */
     protected void initializeSelectionQuery(AbstractSession session) throws DescriptorException {
-        if (((ObjectLevelReadQuery)getSelectionQuery()).getReferenceClass() == null) {
+        if (((ObjectLevelReadQuery) getSelectionQuery()).getReferenceClass() == null) {
             throw DescriptorException.referenceClassNotSpecified(this);
         }
         getSelectionQuery().setName(getAttributeName());
@@ -1499,6 +1511,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
      * PUBLIC:
      * Sets the reference object to be a private owned.
      * The default behavior is non private owned, or independent.
+     *
      * @see #setIsPrivateOwned(boolean)
      */
     public void privateOwnedRelationship() {
@@ -1515,7 +1528,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
     public Object readFromRowIntoObject(AbstractRecord databaseRow, JoinedAttributeManager joinManager, Object targetObject, CacheKey parentCacheKey, ObjectBuildingQuery sourceQuery, AbstractSession executionSession, boolean isTargetProtected) throws DatabaseException {
         Boolean[] wasCacheUsed = new Boolean[]{Boolean.FALSE};
         Object attributeValue = valueFromRow(databaseRow, joinManager, sourceQuery, parentCacheKey, executionSession, isTargetProtected, wasCacheUsed);
-        if (wasCacheUsed[0]){
+        if (wasCacheUsed[0]) {
             //must clone here as certain mappings require the clone object to clone the attribute.
             Integer refreshCascade = null;
             if (sourceQuery != null && sourceQuery.isObjectBuildingQuery() && sourceQuery.shouldRefreshIdentityMapResult()) {
@@ -1523,19 +1536,19 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
             }
             attributeValue = this.indirectionPolicy.cloneAttribute(attributeValue, parentCacheKey.getObject(), parentCacheKey, targetObject, refreshCascade, executionSession, false);
         }
-        if (executionSession.isUnitOfWork() && sourceQuery.shouldRefreshIdentityMapResult() || databaseRow.hasSopObject()){
+        if (executionSession.isUnitOfWork() && sourceQuery.shouldRefreshIdentityMapResult() || databaseRow.hasSopObject()) {
             // check whether the attribute is fully build before calling getAttributeValueFromObject because that
             // call may fully build the attribute
             boolean wasAttributeValueFullyBuilt = isAttributeValueFullyBuilt(targetObject);
             Object oldAttribute = this.getAttributeValueFromObject(targetObject);
             setAttributeValueInObject(targetObject, attributeValue); // set this first to prevent infinite recursion
-            if (wasAttributeValueFullyBuilt && this.indirectionPolicy.objectIsInstantiatedOrChanged(oldAttribute)){
+            if (wasAttributeValueFullyBuilt && this.indirectionPolicy.objectIsInstantiatedOrChanged(oldAttribute)) {
                 this.indirectionPolicy.instantiateObject(targetObject, attributeValue);
             }
-        }else{
+        } else {
             setAttributeValueInObject(targetObject, attributeValue);
         }
-        if (parentCacheKey != null){
+        if (parentCacheKey != null) {
             this.indirectionPolicy.setSourceObject(parentCacheKey.getObject(), attributeValue);
         }
         return attributeValue;
@@ -1664,18 +1677,18 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
      * It also ensures that private objects removed from collections are deleted and object added are inserted.
      */
     public void setIsPrivateOwned(boolean isPrivateOwned) {
-        if (this.descriptor != null && ! this.isMapKeyMapping()){ // initialized
-            if (isPrivateOwned && !this.isPrivateOwned){
+        if (this.descriptor != null && !this.isMapKeyMapping()) { // initialized
+            if (isPrivateOwned && !this.isPrivateOwned) {
                 this.descriptor.addMappingsPostCalculateChanges(this);
-                if (getDescriptor().hasInheritance()){
-                    for (ClassDescriptor descriptor: getDescriptor().getInheritancePolicy().getAllChildDescriptors()) {
+                if (getDescriptor().hasInheritance()) {
+                    for (ClassDescriptor descriptor : getDescriptor().getInheritancePolicy().getAllChildDescriptors()) {
                         descriptor.addMappingsPostCalculateChanges(this);
                     }
                 }
-            }else if (!isPrivateOwned && this.isPrivateOwned){
+            } else if (!isPrivateOwned && this.isPrivateOwned) {
                 this.descriptor.getMappingsPostCalculateChanges().remove(this);
-                if (getDescriptor().hasInheritance()){
-                    for (ClassDescriptor descriptor: getDescriptor().getInheritancePolicy().getAllChildDescriptors()) {
+                if (getDescriptor().hasInheritance()) {
+                    for (ClassDescriptor descriptor : getDescriptor().getInheritancePolicy().getAllChildDescriptors()) {
                         descriptor.getMappingsPostCalculateChanges().remove(this);
                     }
                 }
@@ -1734,11 +1747,11 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
     }
 
     /**
-    * PUBLIC:
-    * Use this method to specify the relationship partner attribute name of a bidirectional Mapping.
-    * TopLink will use the attribute name to find the back pointer mapping to maintain referential integrity of
-    * the bi-directional mappings.
-    */
+     * PUBLIC:
+     * Use this method to specify the relationship partner attribute name of a bidirectional Mapping.
+     * TopLink will use the attribute name to find the back pointer mapping to maintain referential integrity of
+     * the bi-directional mappings.
+     */
     public void setRelationshipPartnerAttributeName(String attributeName) {
         this.relationshipPartnerAttributeName = attributeName;
     }
@@ -1768,7 +1781,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
         selectionQuery = aQuery;
         // Make sure the reference class of the selectionQuery is set.
         if ((selectionQuery != null) && selectionQuery.isObjectLevelReadQuery() && (selectionQuery.getReferenceClassName() == null)) {
-            ((ObjectLevelReadQuery)selectionQuery).setReferenceClass(getReferenceClass());
+            ((ObjectLevelReadQuery) selectionQuery).setReferenceClass(getReferenceClass());
         }
     }
 
@@ -1810,6 +1823,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
      * Indicates whether the referenced object should always be batch read on read all queries.
      * Batch reading will read all of the related objects in a single query when accessed from an originating read all.
      * This should only be used if it is know that the related objects are always required with the source object, or indirection is not used.
+     *
      * @see #setBatchFetchType(BatchFetchType)
      */
     public void setUsesBatchReading(boolean usesBatchReading) {
@@ -1825,6 +1839,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
      * Indirection means that a ValueHolder will be put in-between the attribute and the real object.
      * This allows for the reading of the target from the database to be delayed until accessed.
      * This defaults to true and is strongly suggested as it give a huge performance gain.
+     *
      * @see #useBasicIndirection()
      * @see #dontUseIndirection()
      */
@@ -1885,7 +1900,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
      * Returns true if the merge should cascade to the mappings reference's parts.
      */
     public boolean shouldMergeCascadeParts(MergeManager mergeManager) {
-        return (mergeManager.shouldCascadeByMapping() && ((this.isCascadeMerge() && !mergeManager.isForRefresh()) || (this.isCascadeRefresh() && mergeManager.isForRefresh()) )) || mergeManager.shouldCascadeAllParts() || (mergeManager.shouldCascadePrivateParts() && isPrivateOwned());
+        return (mergeManager.shouldCascadeByMapping() && ((this.isCascadeMerge() && !mergeManager.isForRefresh()) || (this.isCascadeRefresh() && mergeManager.isForRefresh()))) || mergeManager.shouldCascadeAllParts() || (mergeManager.shouldCascadePrivateParts() && isPrivateOwned());
     }
 
     /**
@@ -1965,11 +1980,12 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
      * Configures the mapping to used weaved indirection.
      * This requires that the toplink-agent be used to weave indirection into the class.
      * This policy is only require for method access.
-     * @param getMethodName is the name of the original (or weaved in field access case) set method for the mapping.
-     * @param setMethodName is the name of the original (or weaved in field access case) set method for the mapping.
+     *
+     * @param getMethodName       is the name of the original (or weaved in field access case) set method for the mapping.
+     * @param setMethodName       is the name of the original (or weaved in field access case) set method for the mapping.
      * @param hasUsedMethodAccess indicates whether method or field access was originally used.
      */
-    public void useWeavedIndirection(String getMethodName, String setMethodName, boolean hasUsedMethodAccess){
+    public void useWeavedIndirection(String getMethodName, String setMethodName, boolean hasUsedMethodAccess) {
         setIndirectionPolicy(new WeavedObjectBasicIndirectionPolicy(getMethodName, setMethodName, null, hasUsedMethodAccess));
     }
 
@@ -2013,6 +2029,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
      * if the relationship may reference null or an empty collection an outer join should be used to avoid filtering the source objects from the queries.
      * Join fetch can also be specified on the query, and it is normally more efficient to do so as some queries may not require the related objects.
      * Typically batch reading is more efficient than join fetching and should be considered, especially for collection relationships.
+     *
      * @see org.eclipse.persistence.queries.ObjectLevelReadQuery#addJoinedAttribute(String)
      * @see org.eclipse.persistence.queries.ReadAllQuery#addBatchReadAttribute(String)
      */
@@ -2129,13 +2146,13 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
         }
 
         if (getAttributeAccessor() instanceof InstanceVariableAttributeAccessor) {
-            Class attributeType = ((InstanceVariableAttributeAccessor)getAttributeAccessor()).getAttributeType();
+            Class attributeType = ((InstanceVariableAttributeAccessor) getAttributeAccessor()).getAttributeType();
             this.indirectionPolicy.validateDeclaredAttributeType(attributeType, session.getIntegrityChecker());
         } else if (getAttributeAccessor().isMethodAttributeAccessor()) {
             // 323148
-            Class returnType = ((MethodAttributeAccessor)getAttributeAccessor()).getGetMethodReturnType();
+            Class returnType = ((MethodAttributeAccessor) getAttributeAccessor()).getGetMethodReturnType();
             this.indirectionPolicy.validateGetMethodReturnType(returnType, session.getIntegrityChecker());
-            Class parameterType = ((MethodAttributeAccessor)getAttributeAccessor()).getSetMethodParameterType();
+            Class parameterType = ((MethodAttributeAccessor) getAttributeAccessor()).getSetMethodParameterType();
             this.indirectionPolicy.validateSetMethodParameterType(parameterType, session.getIntegrityChecker());
         }
     }
@@ -2159,7 +2176,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
                 //used cached collection
                 Object cached = cacheKey.getObject();
                 if (cached != null) {
-                    if (wasCacheUsed != null){
+                    if (wasCacheUsed != null) {
                         wasCacheUsed[0] = Boolean.TRUE;
                     }
                     //this will just clone the indirection.
@@ -2184,9 +2201,9 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
         }
         // If the query uses batch reading, return a special value holder
         // or retrieve the object from the query property.
-        if (sourceQuery.isObjectLevelReadQuery() && (((ObjectLevelReadQuery)sourceQuery).isAttributeBatchRead(this.descriptor, getAttributeName())
+        if (sourceQuery.isObjectLevelReadQuery() && (((ObjectLevelReadQuery) sourceQuery).isAttributeBatchRead(this.descriptor, getAttributeName())
                 || (sourceQuery.isReadAllQuery() && shouldUseBatchReading()))) {
-            return batchedValueFromRow(row, (ObjectLevelReadQuery)sourceQuery, cacheKey);
+            return batchedValueFromRow(row, (ObjectLevelReadQuery) sourceQuery, cacheKey);
         } else {
             return valueFromRowInternal(row, joinManager, sourceQuery, executionSession, false);
         }
@@ -2223,6 +2240,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
      * INTERNAL:
      * Return the value of the reference attribute or a value holder.
      * Check whether the mapping's attribute should be optimized through batch and joining.
+     *
      * @param shouldUseSopObject indicates whether sopObject stored in the row should be used to extract the value (and fields/values stored in the row ignored).
      */
     protected Object valueFromRowInternal(AbstractRecord row, JoinedAttributeManager joinManager, ObjectBuildingQuery sourceQuery, AbstractSession executionSession, boolean shouldUseSopObject) throws DatabaseException {
@@ -2256,13 +2274,13 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
 
         // Bug 464088
         if (executionSession.isHistoricalSession() && !targetQuery.isPrepared()) {
-            targetQuery = (ObjectLevelReadQuery)targetQuery.clone();
+            targetQuery = (ObjectLevelReadQuery) targetQuery.clone();
             targetQuery.setIsExecutionClone(true);
         }
 
         if (!org.eclipse.persistence.internal.helper.CubaUtil.isSoftDeletion()) {
             if (targetQuery == this.selectionQuery) {
-                targetQuery = (ObjectLevelReadQuery)targetQuery.clone();
+                targetQuery = (ObjectLevelReadQuery) targetQuery.clone();
                 targetQuery.setIsExecutionClone(true);
             }
         }
@@ -2272,14 +2290,14 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
             FetchGroup sourceFG = sourceQuery.getExecutionFetchGroup(this.getDescriptor());
             if (sourceFG != null) {
                 FetchGroup targetFetchGroup = sourceFG.getGroup(getAttributeName());
-                if(targetFetchGroup != null) {
+                if (targetFetchGroup != null) {
                     // perf: bug#4751950, first prepare the query before cloning.
                     if (targetQuery.shouldPrepare()) {
                         targetQuery.checkPrepare(executionSession, row);
                     }
-                    targetQuery = (ObjectLevelReadQuery)targetQuery.clone();
+                    targetQuery = (ObjectLevelReadQuery) targetQuery.clone();
                     targetQuery.setIsExecutionClone(true);
-                    ((ObjectLevelReadQuery)targetQuery).setFetchGroup(targetFetchGroup);
+                    ((ObjectLevelReadQuery) targetQuery).setFetchGroup(targetFetchGroup);
                 }
             }
         }
@@ -2293,14 +2311,14 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
                 if (targetQuery.shouldPrepare()) {
                     targetQuery.checkPrepare(executionSession, row);
                 }
-                targetQuery = (ObjectLevelReadQuery)targetQuery.clone();
+                targetQuery = (ObjectLevelReadQuery) targetQuery.clone();
                 targetQuery.setIsExecutionClone(true);
             }
             targetQuery.setQueryId(sourceQuery.getQueryId());
             if (sourceQuery.usesResultSetAccessOptimization()) {
                 targetQuery.setAccessors(sourceQuery.getAccessors());
             }
-            ((ObjectLevelReadQuery)targetQuery).setRequiresDeferredLocks(sourceQuery.requiresDeferredLocks());
+            ((ObjectLevelReadQuery) targetQuery).setRequiresDeferredLocks(sourceQuery.requiresDeferredLocks());
         }
 
         // If the source query is cascading then the target query must use the same settings.
@@ -2313,11 +2331,11 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
                     if (targetQuery.shouldPrepare()) {
                         targetQuery.checkPrepare(executionSession, row);
                     }
-                    targetQuery = (ObjectLevelReadQuery)targetQuery.clone();
+                    targetQuery = (ObjectLevelReadQuery) targetQuery.clone();
                     targetQuery.setIsExecutionClone(true);
                 }
 
-                ((ObjectLevelReadQuery)targetQuery).setShouldRefreshIdentityMapResult(sourceQuery.shouldRefreshIdentityMapResult());
+                ((ObjectLevelReadQuery) targetQuery).setShouldRefreshIdentityMapResult(sourceQuery.shouldRefreshIdentityMapResult());
                 targetQuery.setCascadePolicy(sourceQuery.getCascadePolicy());
 
                 // For queries that have turned caching off, such as aggregate collection, leave it off.
@@ -2326,9 +2344,9 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
                 }
 
                 // For flashback: Read attributes as of the same time if required.
-                if (((ObjectLevelReadQuery)sourceQuery).hasAsOfClause()) {
-                    targetQuery.setSelectionCriteria((Expression)targetQuery.getSelectionCriteria().clone());
-                    ((ObjectLevelReadQuery)targetQuery).setAsOfClause(((ObjectLevelReadQuery)sourceQuery).getAsOfClause());
+                if (((ObjectLevelReadQuery) sourceQuery).hasAsOfClause()) {
+                    targetQuery.setSelectionCriteria((Expression) targetQuery.getSelectionCriteria().clone());
+                    ((ObjectLevelReadQuery) targetQuery).setAsOfClause(((ObjectLevelReadQuery) sourceQuery).getAsOfClause());
                 }
             }
 
@@ -2339,10 +2357,10 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
                         if (targetQuery.shouldPrepare()) {
                             targetQuery.checkPrepare(executionSession, row);
                         }
-                        targetQuery = (ObjectLevelReadQuery)targetQuery.clone();
+                        targetQuery = (ObjectLevelReadQuery) targetQuery.clone();
                         targetQuery.setIsExecutionClone(true);
                     }
-                    extendPessimisticLockScopeInTargetQuery((ObjectLevelReadQuery)targetQuery, sourceQuery);
+                    extendPessimisticLockScopeInTargetQuery((ObjectLevelReadQuery) targetQuery, sourceQuery);
                 } else if (this.extendPessimisticLockScope == ExtendPessimisticLockScope.DEDICATED_QUERY) {
                     ReadQuery dedicatedQuery = getExtendPessimisticLockScopeDedicatedQuery(executionSession, sourceQuery.getLockMode());
                     executionSession.executeQuery(dedicatedQuery, row);
@@ -2361,7 +2379,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
     protected boolean isExtendingPessimisticLockScope(ObjectBuildingQuery sourceQuery) {
         // TODO: What if sourceQuery is NOT ObjectLevelReadQuery? Should we somehow handle this?
         // Or alternatively define ObjectBuildingQuery.shouldExtendPessimisticLockScope() to always return false?
-        return sourceQuery.isLockQuery() && sourceQuery.isObjectLevelReadQuery() && ((ObjectLevelReadQuery)sourceQuery).shouldExtendPessimisticLockScope();
+        return sourceQuery.isLockQuery() && sourceQuery.isObjectLevelReadQuery() && ((ObjectLevelReadQuery) sourceQuery).shouldExtendPessimisticLockScope();
     }
 
     /**
@@ -2384,7 +2402,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
         if ((joinManager != null) && (joinManager.getJoinedMappingIndexes_() != null)) {
             Object value = joinManager.getJoinedMappingIndexes_().get(this);
             if (value != null) {
-               return trimRowForJoin(row, value, executionSession);
+                return trimRowForJoin(row, value, executionSession);
             }
         }
         return row;
@@ -2400,17 +2418,35 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
         // this also helps the field indexing match.
         int fieldStartIndex;
         if (value instanceof Integer) {
-            fieldStartIndex = ((Integer)value).intValue();
+            fieldStartIndex = ((Integer) value).intValue();
         } else {
             // must be Map of classes to Integers
-            Map map = (Map)value;
+            Map map = (Map) value;
             Class cls;
             if (getDescriptor().hasInheritance() && getDescriptor().getInheritancePolicy().shouldReadSubclasses()) {
                 cls = getDescriptor().getInheritancePolicy().classFromRow(row, executionSession);
             } else {
                 cls = getDescriptor().getJavaClass();
+                //CUBA begin
+                if (getDescriptor().isAggregateDescriptor() && !map.containsKey(cls)) {
+                    Class rootClass = null;
+                    for (Object it : map.keySet()) {
+                        ClassDescriptor valueDescriptor = executionSession.getDescriptor((Class) it);
+                        if (valueDescriptor != null
+                                && valueDescriptor.hasInheritance()
+                                && valueDescriptor.getInheritancePolicy().shouldReadSubclasses()) {
+                            if (rootClass == null) {
+                                rootClass = valueDescriptor.getInheritancePolicy().classFromRow(row, executionSession);
+                            }
+                        }
+                    }
+                    if (rootClass != null) {
+                        cls = rootClass;
+                    }
+                }
+                //CUBA end
             }
-            fieldStartIndex = ((Integer)map.get(cls)).intValue();
+            fieldStartIndex = ((Integer) map.get(cls)).intValue();
         }
         Vector trimedFields = new NonSynchronizedSubVector(row.getFields(), fieldStartIndex, row.size());
         Vector trimedValues = new NonSynchronizedSubVector(row.getValues(), fieldStartIndex, row.size());
@@ -2442,7 +2478,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
         if (nestedQuery == null) {
             if (joinManager.getJoinedMappingQueries_() != null) {
                 nestedQuery = joinManager.getJoinedMappingQueries_().get(this);
-                nestedQuery = (ObjectLevelReadQuery)nestedQuery.clone();
+                nestedQuery = (ObjectLevelReadQuery) nestedQuery.clone();
             } else {
                 nestedQuery = prepareNestedJoins(joinManager, sourceQuery, executionSession);
             }
@@ -2466,7 +2502,7 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
             Object indexObject = joinManager.getJoinedMappingIndexes_().get(this);
             // Trim results to start at nested row index.
             for (int index = 0; index < nestedDataResults.size(); index++) {
-                AbstractRecord sourceRow = (AbstractRecord)nestedDataResults.get(index);
+                AbstractRecord sourceRow = (AbstractRecord) nestedDataResults.get(index);
                 nestedDataResults.set(index, trimRowForJoin(sourceRow, indexObject, executionSession));
             }
             nestedQuery.getJoinedAttributeManager().setDataResults(nestedDataResults, executionSession);
