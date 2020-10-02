@@ -2411,6 +2411,24 @@ if (!org.eclipse.persistence.internal.helper.CubaUtil.isSoftDeletion()) {
                 cls = getDescriptor().getInheritancePolicy().classFromRow(row, executionSession);
             } else {
                 cls = getDescriptor().getJavaClass();
+                //CUBA begin
+                if (getDescriptor().isAggregateDescriptor() && !map.containsKey(cls)) {
+                    Class rootClass = null;
+                    for (Object it : map.keySet()) {
+                        ClassDescriptor valueDescriptor = executionSession.getDescriptor((Class) it);
+                        if (valueDescriptor != null
+                                && valueDescriptor.hasInheritance()
+                                && valueDescriptor.getInheritancePolicy().shouldReadSubclasses()) {
+                            if (rootClass == null) {
+                                rootClass = valueDescriptor.getInheritancePolicy().classFromRow(row, executionSession);
+                            }
+                        }
+                    }
+                    if (rootClass != null) {
+                        cls = rootClass;
+                    }
+                }
+                //CUBA end
             }
             fieldStartIndex = ((Integer)map.get(cls)).intValue();
         }
