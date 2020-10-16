@@ -22,34 +22,30 @@
 //       - #253: Add support for embedded constructor results with CriteriaBuilder
 package org.eclipse.persistence.internal.queries;
 
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
+import org.eclipse.persistence.descriptors.ClassDescriptor;
+import org.eclipse.persistence.descriptors.DescriptorQueryManager;
+import org.eclipse.persistence.descriptors.InheritancePolicy;
+import org.eclipse.persistence.exceptions.DatabaseException;
+import org.eclipse.persistence.exceptions.QueryException;
+import org.eclipse.persistence.expressions.Expression;
+import org.eclipse.persistence.expressions.ExpressionBuilder;
+import org.eclipse.persistence.internal.databaseaccess.DatabaseCall;
 import org.eclipse.persistence.internal.databaseaccess.DatasourceCall;
 import org.eclipse.persistence.internal.databaseaccess.DatasourcePlatform;
 import org.eclipse.persistence.internal.descriptors.OptimisticLockingPolicy;
+import org.eclipse.persistence.internal.expressions.*;
 import org.eclipse.persistence.internal.helper.*;
 import org.eclipse.persistence.internal.identitymaps.CacheKey;
-import org.eclipse.persistence.internal.expressions.*;
-import org.eclipse.persistence.expressions.*;
-import org.eclipse.persistence.logging.SessionLog;
-import org.eclipse.persistence.mappings.AggregateCollectionMapping;
-import org.eclipse.persistence.mappings.DatabaseMapping;
-import org.eclipse.persistence.mappings.DirectCollectionMapping;
-import org.eclipse.persistence.mappings.ForeignReferenceMapping;
-import org.eclipse.persistence.mappings.ManyToManyMapping;
-import org.eclipse.persistence.mappings.RelationTableMechanism;
-import org.eclipse.persistence.exceptions.*;
-import org.eclipse.persistence.mappings.OneToOneMapping;
-import org.eclipse.persistence.queries.*;
-import org.eclipse.persistence.descriptors.InheritancePolicy;
-import org.eclipse.persistence.descriptors.DescriptorQueryManager;
 import org.eclipse.persistence.internal.sessions.AbstractRecord;
-import org.eclipse.persistence.internal.sessions.UnitOfWorkImpl;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
-import org.eclipse.persistence.descriptors.ClassDescriptor;
-import org.eclipse.persistence.internal.databaseaccess.DatabaseCall;
+import org.eclipse.persistence.internal.sessions.UnitOfWorkImpl;
+import org.eclipse.persistence.logging.SessionLog;
+import org.eclipse.persistence.mappings.*;
+import org.eclipse.persistence.queries.*;
+
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * <p><b>Purpose</b>:
@@ -163,12 +159,19 @@ public class ExpressionQueryMechanism extends StatementQueryMechanism {
             DescriptorQueryManager queryManager = getDescriptor().getQueryManager();
             Expression additionalJoin;
             if (shouldUseAdditionalJoinExpression) {
-                additionalJoin = queryManager.getAdditionalJoinExpression();
+                // cuba begin
+                if (getSession().getPlatform().shouldPrintInheritanceTableJoinsInFromClause()) {
+                    additionalJoin = queryManager.getAdditionalJoinExpressionWithoutMultiTableJoins();
+                } else {
+                    additionalJoin = queryManager.getAdditionalJoinExpression();
+                }
+                // cuba end
             } else {
                 additionalJoin = queryManager.getMultipleTableJoinExpression();
-                if (additionalJoin == null) {
-                    return expression;
-                }
+            }
+
+            if (additionalJoin == null) {
+                return expression;
             }
 
             // If there's an expression, then we know we'll have to rebuild anyway, so don't clone.
@@ -210,6 +213,13 @@ public class ExpressionQueryMechanism extends StatementQueryMechanism {
         selectStatement.setLockingClause(query.getLockingClause());
         selectStatement.setDistinctState(query.getDistinctState());
         selectStatement.setTables((Vector)getDescriptor().getTables().clone());
+
+        // cuba begin
+        if (getSession().getPlatform().shouldPrintInheritanceTableJoinsInFromClause()) {
+            addInheritanceTablesJoinsInFromClause(selectStatement);
+        }
+        // cuba end
+
         selectStatement.setWhereClause(buildBaseSelectionCriteria(isSubSelect, clonedExpressions, shouldUseAdditionalJoinExpression));
         //make sure we use the cloned builder and make sure we get the builder from the query if we have set the type.
         // If we use the expression builder and there are parallel builders and the query builder is on the 'right'
@@ -245,6 +255,39 @@ public class ExpressionQueryMechanism extends StatementQueryMechanism {
         selectStatement.setTranslationRow(getTranslationRow());
         return selectStatement;
     }
+
+    // cuba begin
+    protected void addInheritanceTablesJoinsInFromClause(SQLSelectStatement selectStatement) {
+        Vector<DatabaseTable> tablesInCurrentStatement = (Vector<DatabaseTable>) selectStatement.getTables();
+
+        DescriptorQueryManager queryManager = getDescriptor().getQueryManager();
+        ClassDescriptor descriptor = queryManager.getDescriptor();
+
+        if (descriptor.hasInheritance() && !descriptor.equals(descriptor.getRootDescriptor())) {
+            ClassDescriptor rootDescriptor = descriptor.getRootDescriptor();
+            Map<DatabaseTable, Expression> childrenTablesJoinExpressions = rootDescriptor.getInheritancePolicy()
+                    .getChildrenTablesJoinExpressions();
+
+            if(childrenTablesJoinExpressions == null || childrenTablesJoinExpressions.isEmpty())
+                // Inheritance type is not JOINED
+                return;
+
+            // Adding joins from the root entity but only for the tables used in the current statement
+            HashMap<DatabaseTable, Expression> joinExpressionsMap = new HashMap<>(childrenTablesJoinExpressions);
+            for (Iterator<Map.Entry<DatabaseTable, Expression>> it = joinExpressionsMap.entrySet().iterator(); it.hasNext(); ) {
+                DatabaseTable databaseTable = it.next().getKey();
+                if (!tablesInCurrentStatement.contains(databaseTable)) {
+                    it.remove();
+                }
+            }
+
+            if(!joinExpressionsMap.isEmpty()) {
+                selectStatement.addOuterJoinExpressionsHolders(null, null,
+                        joinExpressionsMap, getDescriptor().getRootDescriptor(), true);
+            }
+        }
+    }
+    // cuba end
 
     /**
      * Return the appropriate select statement containing the fields in the table.

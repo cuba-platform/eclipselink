@@ -1189,6 +1189,12 @@ public class SQLSelectStatement extends SQLStatement {
         return outerJoinExpressionHolders;
     }
 
+    public Integer addOuterJoinExpressionsHolders(ObjectExpression joinExpression, Expression outerJoinedMappingCriteria,
+            Map<DatabaseTable, Expression> outerJoinedAdditionalJoinCriteria, ClassDescriptor descriptor) {
+        return addOuterJoinExpressionsHolders(joinExpression, outerJoinedMappingCriteria, outerJoinedAdditionalJoinCriteria, descriptor, false);
+    }
+
+    // cuba begin  (useInnerJoinForAdditionalJoinCriteria parameter added)
     /**
      * INTERNAL:
      * Used by ExpressionBuilder and QueryKeyExpression normalization to create a standard outerjoin.
@@ -1196,18 +1202,22 @@ public class SQLSelectStatement extends SQLStatement {
      * @param outerJoinedMappingCriteria - used for querykey mapping expressions
      * @param outerJoinedAdditionalJoinCriteria - additional tables/expressions to join.  Usually for multitableInheritance join expressions
      * @param descriptor - descriptor to use if this is for reading in subclasses in one query.
+     * @param useInnerJoinForAdditionalJoinCriteria - used to use inner joins instead of left outer joins for tables in the 'outerJoinedAdditionalJoinCriteria' param
      * @return
      */
     public Integer addOuterJoinExpressionsHolders(ObjectExpression joinExpression, Expression outerJoinedMappingCriteria,
-            Map<DatabaseTable, Expression> outerJoinedAdditionalJoinCriteria, ClassDescriptor descriptor) {
+                                                  Map<DatabaseTable, Expression> outerJoinedAdditionalJoinCriteria,
+                                                  ClassDescriptor descriptor,
+                                                  boolean useInnerJoinForAdditionalJoinCriteria) {
 
         int index = getOuterJoinExpressionsHolders().size();
         OuterJoinExpressionHolder holder = new OuterJoinExpressionHolder(this, joinExpression, outerJoinedMappingCriteria,
-                outerJoinedAdditionalJoinCriteria, descriptor);
+                outerJoinedAdditionalJoinCriteria, descriptor, useInnerJoinForAdditionalJoinCriteria);
 
         getOuterJoinExpressionsHolders().add(holder);
         return index;
     }
+    // cuba end
 
     /**
      * INTERNAL:
