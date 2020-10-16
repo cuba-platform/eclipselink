@@ -14,10 +14,6 @@
 //     Oracle - initial API and implementation from Oracle TopLink
 package org.eclipse.persistence.expressions;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.util.Map;
-
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.exceptions.QueryException;
 import org.eclipse.persistence.history.AsOfClause;
@@ -30,6 +26,10 @@ import org.eclipse.persistence.internal.sessions.AbstractRecord;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
 import org.eclipse.persistence.queries.DatabaseQuery;
 import org.eclipse.persistence.queries.ReadQuery;
+
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.util.Map;
 
 /**
  * <P>
@@ -294,7 +294,13 @@ public class ExpressionBuilder extends ObjectExpression {
                 throw QueryException.noExpressionBuilderFound(this);
             }
             if (!this.wasAdditionJoinCriteriaUsed) {
-                criteria = getDescriptor().getQueryManager().getAdditionalJoinExpression();
+                // cuba begin
+                if (getSession().getPlatform().shouldPrintInheritanceTableJoinsInFromClause()) {
+                    criteria = getDescriptor().getQueryManager().getAdditionalJoinExpressionWithoutMultiTableJoins();
+                } else {
+                    criteria = getDescriptor().getQueryManager().getAdditionalJoinExpression();
+                }
+                // cuba end
                 if (criteria != null) {
                     criteria = twist(criteria, this);
                 }
