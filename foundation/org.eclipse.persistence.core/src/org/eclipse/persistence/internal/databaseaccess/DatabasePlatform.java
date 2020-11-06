@@ -31,34 +31,7 @@
 package org.eclipse.persistence.internal.databaseaccess;
 
 // javase imports
-import java.io.ByteArrayInputStream;
-import java.io.CharArrayReader;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.io.Writer;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.sql.Array;
-import java.sql.CallableStatement;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.Ref;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.SQLXML;
-import java.sql.Statement;
-import java.sql.Struct;
-import java.sql.Types;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Vector;
 
-// EclipseLink imports
 import org.eclipse.persistence.descriptors.ClassDescriptor;
 import org.eclipse.persistence.exceptions.DatabaseException;
 import org.eclipse.persistence.exceptions.ValidationException;
@@ -67,12 +40,7 @@ import org.eclipse.persistence.expressions.ExpressionBuilder;
 import org.eclipse.persistence.internal.expressions.ExpressionSQLPrinter;
 import org.eclipse.persistence.internal.expressions.ParameterExpression;
 import org.eclipse.persistence.internal.expressions.SQLSelectStatement;
-import org.eclipse.persistence.internal.helper.ClassConstants;
-import org.eclipse.persistence.internal.helper.ConversionManager;
-import org.eclipse.persistence.internal.helper.DatabaseField;
-import org.eclipse.persistence.internal.helper.DatabaseTable;
-import org.eclipse.persistence.internal.helper.Helper;
-import org.eclipse.persistence.internal.helper.JavaPlatform;
+import org.eclipse.persistence.internal.helper.*;
 import org.eclipse.persistence.internal.sequencing.Sequencing;
 import org.eclipse.persistence.internal.sessions.AbstractRecord;
 import org.eclipse.persistence.internal.sessions.AbstractSession;
@@ -80,26 +48,21 @@ import org.eclipse.persistence.internal.sessions.DatabaseSessionImpl;
 import org.eclipse.persistence.logging.SessionLog;
 import org.eclipse.persistence.mappings.ForeignReferenceMapping;
 import org.eclipse.persistence.mappings.structures.ObjectRelationalDatabaseField;
-import org.eclipse.persistence.platform.database.AccessPlatform;
-import org.eclipse.persistence.platform.database.DB2Platform;
-import org.eclipse.persistence.platform.database.DBasePlatform;
-import org.eclipse.persistence.platform.database.OraclePlatform;
-import org.eclipse.persistence.platform.database.PostgreSQLPlatform;
-import org.eclipse.persistence.platform.database.SybasePlatform;
-import org.eclipse.persistence.platform.database.SymfowarePlatform;
+import org.eclipse.persistence.platform.database.*;
 import org.eclipse.persistence.platform.database.converters.StructConverter;
 import org.eclipse.persistence.platform.database.partitioning.DataPartitioningCallback;
-import org.eclipse.persistence.queries.Call;
-import org.eclipse.persistence.queries.DataReadQuery;
-import org.eclipse.persistence.queries.DatabaseQuery;
-import org.eclipse.persistence.queries.ReportQuery;
-import org.eclipse.persistence.queries.SQLCall;
-import org.eclipse.persistence.queries.StoredProcedureCall;
+import org.eclipse.persistence.queries.*;
 import org.eclipse.persistence.sequencing.Sequence;
 import org.eclipse.persistence.sequencing.TableSequence;
 import org.eclipse.persistence.sessions.SessionProfiler;
 import org.eclipse.persistence.tools.schemaframework.FieldDefinition;
 import org.eclipse.persistence.tools.schemaframework.TableDefinition;
+
+import java.io.*;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.sql.*;
+import java.util.*;
 
 /**
  * DatabasePlatform is private to EclipseLink. It encapsulates behavior specific to a database platform
@@ -113,81 +76,126 @@ import org.eclipse.persistence.tools.schemaframework.TableDefinition;
  * @see DBasePlatform
  * @see OraclePlatform
  * @see SybasePlatform
- *
  * @since TOPLink/Java 1.0
  */
 public class DatabasePlatform extends DatasourcePlatform {
 
-    /** Holds a map of values used to map JAVA types to database types for table creation */
+    /**
+     * Holds a map of values used to map JAVA types to database types for table creation
+     */
     protected transient Map<Class, FieldTypeDefinition> fieldTypes;
 
-    /** Indicates that native SQL should be used for literal values instead of ODBC escape format
-    Only used with Oracle, Sybase & DB2 */
+    /**
+     * Indicates that native SQL should be used for literal values instead of ODBC escape format
+     * Only used with Oracle, Sybase & DB2
+     */
     protected boolean usesNativeSQL;
 
-    /** Indicates that binding will be used for BLOB data. NOTE: does not work well with ODBC. */
+    /**
+     * Indicates that binding will be used for BLOB data. NOTE: does not work well with ODBC.
+     */
     protected boolean usesByteArrayBinding;
 
-    /** Batch all write statements */
+    /**
+     * Batch all write statements
+     */
     protected boolean usesBatchWriting;
 
-    /** Bind all arguments to any SQL statement. */
+    /**
+     * Bind all arguments to any SQL statement.
+     */
     protected boolean shouldBindAllParameters;
 
-    /** Cache all prepared statements, this requires full parameter binding as well. */
+    /**
+     * Cache all prepared statements, this requires full parameter binding as well.
+     */
     protected boolean shouldCacheAllStatements;
 
-    /** The statement cache size for prepare parameterized statements. */
+    /**
+     * The statement cache size for prepare parameterized statements.
+     */
     protected int statementCacheSize;
 
-    /** Can be used if the app expects upper case but the database is not return consistent case, i.e. different databases. */
+    /**
+     * Can be used if the app expects upper case but the database is not return consistent case, i.e. different databases.
+     */
     protected boolean shouldForceFieldNamesToUpperCase;
 
-    /** Indicates (if true) to remove blanks characters from the right of CHAR strings. */
+    /**
+     * Indicates (if true) to remove blanks characters from the right of CHAR strings.
+     */
     protected boolean shouldTrimStrings;
 
-    /** Indicates that streams will be used to store BLOB data. NOTE: does not work with ODBC */
+    /**
+     * Indicates that streams will be used to store BLOB data. NOTE: does not work with ODBC
+     */
     protected boolean usesStreamsForBinding;
 
-    /** Indicates the size above which strings will be bound NOTE: does not work with ODBC */
+    /**
+     * Indicates the size above which strings will be bound NOTE: does not work with ODBC
+     */
     protected int stringBindingSize;
 
-    /** Indicates that strings will above the stringBindingSize will be bound NOTE: does not work with ODBC */
+    /**
+     * Indicates that strings will above the stringBindingSize will be bound NOTE: does not work with ODBC
+     */
     protected boolean usesStringBinding;
 
-    /** Allow for the batch size to be set as many database have strict limits. **/
+    /**
+     * Allow for the batch size to be set as many database have strict limits.
+     **/
     protected int maxBatchWritingSize;
 
-    /** used for casting of input parameters in certain DBs **/
+    /**
+     * used for casting of input parameters in certain DBs
+     **/
     protected int castSizeForVarcharParameter;
 
-    /** Allow for our batch writing support to be used in JDK 1.2. **/
+    /**
+     * Allow for our batch writing support to be used in JDK 1.2.
+     **/
     protected boolean usesJDBCBatchWriting;
 
-    /** bug 4241441: Allow custom batch writing to enable batching with optimistic locking. **/
+    /**
+     * bug 4241441: Allow custom batch writing to enable batching with optimistic locking.
+     **/
     protected boolean usesNativeBatchWriting;
 
-    /** Allow for a custom batch writing mechanism. **/
+    /**
+     * Allow for a custom batch writing mechanism.
+     **/
     protected BatchWritingMechanism batchWritingMechanism;
 
-    /** Allow configuration option to use Where clause outer joining or From clause joining. **/
+    /**
+     * Allow configuration option to use Where clause outer joining or From clause joining.
+     **/
     protected Boolean printOuterJoinInWhereClause;
 
-    /** Allow configuration option to use Where clause joining or From clause joining. **/
+    /**
+     * Allow configuration option to use Where clause joining or From clause joining.
+     **/
     protected Boolean printInnerJoinInWhereClause;
 
     // cuba begin
-    /** **/
+    /**
+     *
+     **/
     protected Boolean printInheritanceTableJoinsInFromClause;
     // cuba end
 
-    /** Allow for the code that is used for preparing cursored outs for a storedprocedure to be settable. **/
+    /**
+     * Allow for the code that is used for preparing cursored outs for a storedprocedure to be settable.
+     **/
     protected int cursorCode;
 
-    /** The transaction isolation level to be set on the connection (optional). */
+    /**
+     * The transaction isolation level to be set on the connection (optional).
+     */
     protected int transactionIsolation;
 
-    /** Some JDBC drivers do not support AutoCommit in the way EclipseLink expects.  (e.g. Attunity Connect, JConnect) */
+    /**
+     * Some JDBC drivers do not support AutoCommit in the way EclipseLink expects.  (e.g. Attunity Connect, JConnect)
+     */
     protected boolean supportsAutoCommit;
 
     /**
@@ -196,28 +204,37 @@ public class DatabasePlatform extends DatasourcePlatform {
      */
     protected boolean shouldOptimizeDataConversion;
 
-    /** Stores mapping of class types to database types for schema creation. */
+    /**
+     * Stores mapping of class types to database types for schema creation.
+     */
     protected transient Map<String, Class> classTypes;
 
-    /** Allow for case in field names to be ignored as some databases are not case sensitive and when using custom this can be an issue. */
+    /**
+     * Allow for case in field names to be ignored as some databases are not case sensitive and when using custom this can be an issue.
+     */
     public static boolean shouldIgnoreCaseOnFieldComparisons = false;
 
 
-    /** Bug#3214927 The default is 32000 for DynamicSQLBatchWritingMechanism.
+    /**
+     * Bug#3214927 The default is 32000 for DynamicSQLBatchWritingMechanism.
      * It would become 100 when switched to ParameterizedSQLBatchWritingMechanism.
      */
     public static final int DEFAULT_MAX_BATCH_WRITING_SIZE = 32000;
     public static final int DEFAULT_PARAMETERIZED_MAX_BATCH_WRITING_SIZE = 100;
 
-    /** Timeout used is isValid() check for dead connections. */
+    /**
+     * Timeout used is isValid() check for dead connections.
+     */
     public static final int IS_VALID_TIMEOUT = 0;
 
-    /** This attribute will store the SQL query that will be used to 'ping' the database
+    /**
+     * This attribute will store the SQL query that will be used to 'ping' the database
      * connection in order to check the health of a connection.
      */
     protected String pingSQL;
 
-    /** The following two maps, provide two ways of looking up StructConverters.
+    /**
+     * The following two maps, provide two ways of looking up StructConverters.
      * They can be looked up by java Class or by Struct type
      */
     protected Map<String, StructConverter> structConverters = null;
@@ -268,7 +285,9 @@ public class DatabasePlatform extends DatasourcePlatform {
      */
     protected DataPartitioningCallback partitioningCallback;
 
-    /** Allows auto-indexing for foreign keys to be set. */
+    /**
+     * Allows auto-indexing for foreign keys to be set.
+     */
     protected boolean shouldCreateIndicesOnForeignKeys;
 
     protected Boolean useJDBCStoredProcedureSyntax;
@@ -365,7 +384,7 @@ public class DatabasePlatform extends DatasourcePlatform {
      * with a session using this project (DDL generation).  This value will be appended to CreationSuffix strings
      * stored on the DatabaseTable or TableDefinition.
      */
-    public String getTableCreationSuffix(){
+    public String getTableCreationSuffix() {
         return this.tableCreationSuffix;
     }
 
@@ -376,7 +395,7 @@ public class DatabasePlatform extends DatasourcePlatform {
      * convert
      */
     public Map<Class, StructConverter> getTypeConverters() {
-        if (typeConverters == null){
+        if (typeConverters == null) {
             typeConverters = new HashMap<Class, StructConverter>();
         }
         return this.typeConverters;
@@ -388,13 +407,14 @@ public class DatabasePlatform extends DatasourcePlatform {
      * This StructConverter will be invoked for all writes to the database for the class returned
      * by its getJavaType() method and for all reads from the database for the Structs described
      * by its getStructName() method
+     *
      * @param converter
      */
     public void addStructConverter(StructConverter converter) {
-        if (structConverters == null){
+        if (structConverters == null) {
             structConverters = new HashMap<String, StructConverter>();
         }
-        if (typeConverters == null){
+        if (typeConverters == null) {
             typeConverters = new HashMap<Class, StructConverter>();
         }
         structConverters.put(converter.getStructName(), converter);
@@ -466,12 +486,12 @@ public class DatabasePlatform extends DatasourcePlatform {
      * value may be passed (so that it's type could be used for binding null).
      */
     public void appendLiteralToCall(Call call, Writer writer, Object literal) {
-        if(shouldBindLiterals()) {
+        if (shouldBindLiterals()) {
             appendLiteralToCallWithBinding(call, writer, literal);
         } else {
             int nParametersToAdd = appendParameterInternal(call, writer, literal);
             for (int i = 0; i < nParametersToAdd; i++) {
-                ((DatabaseCall)call).getParameterTypes().add(DatabaseCall.LITERAL);
+                ((DatabaseCall) call).getParameterTypes().add(DatabaseCall.LITERAL);
             }
         }
     }
@@ -483,7 +503,7 @@ public class DatabasePlatform extends DatasourcePlatform {
      * value may be passed (so that it's type could be used for binding null).
      */
     protected void appendLiteralToCallWithBinding(Call call, Writer writer, Object literal) {
-        ((DatabaseCall)call).appendLiteral(writer, literal);
+        ((DatabaseCall) call).appendLiteral(writer, literal);
     }
 
     /**
@@ -504,45 +524,45 @@ public class DatabasePlatform extends DatasourcePlatform {
      */
     public int appendParameterInternal(Call call, Writer writer, Object parameter) {
         int nBoundParameters = 0;
-        DatabaseCall databaseCall = (DatabaseCall)call;
+        DatabaseCall databaseCall = (DatabaseCall) call;
         try {
             // PERF: Print Calendars directly avoiding timestamp conversion,
             // Must be before conversion as you cannot bind calendars.
             if (parameter instanceof Calendar) {
-                appendCalendar((Calendar)parameter, writer);
+                appendCalendar((Calendar) parameter, writer);
                 return nBoundParameters;
             }
             Object dbValue = convertToDatabaseType(parameter);
 
             if (dbValue instanceof String) {// String and number first as they are most common.
-                if (usesStringBinding() && (((String)dbValue).length() >= getStringBindingSize())) {
+                if (usesStringBinding() && (((String) dbValue).length() >= getStringBindingSize())) {
                     databaseCall.bindParameter(writer, dbValue);
                     nBoundParameters = 1;
                 } else {
-                    appendString((String)dbValue, writer);
+                    appendString((String) dbValue, writer);
                 }
             } else if (dbValue instanceof Number) {
-                appendNumber((Number)dbValue, writer);
+                appendNumber((Number) dbValue, writer);
             } else if (dbValue instanceof java.sql.Time) {
-                appendTime((java.sql.Time)dbValue, writer);
+                appendTime((java.sql.Time) dbValue, writer);
             } else if (dbValue instanceof java.sql.Timestamp) {
-                appendTimestamp((java.sql.Timestamp)dbValue, writer);
+                appendTimestamp((java.sql.Timestamp) dbValue, writer);
             } else if (dbValue instanceof java.sql.Date) {
-                appendDate((java.sql.Date)dbValue, writer);
+                appendDate((java.sql.Date) dbValue, writer);
             } else if (dbValue == null) {
                 writer.write("NULL");
             } else if (dbValue instanceof Boolean) {
-                appendBoolean((Boolean)dbValue, writer);
+                appendBoolean((Boolean) dbValue, writer);
             } else if (dbValue instanceof byte[]) {
                 if (usesByteArrayBinding()) {
                     databaseCall.bindParameter(writer, dbValue);
                     nBoundParameters = 1;
                 } else {
-                    appendByteArray((byte[])dbValue, writer);
+                    appendByteArray((byte[]) dbValue, writer);
                 }
             } else if (dbValue instanceof Collection) {
-                nBoundParameters = printValuelist((Collection)dbValue, databaseCall, writer);
-            } else if (typeConverters != null && typeConverters.containsKey(dbValue.getClass())){
+                nBoundParameters = printValuelist((Collection) dbValue, databaseCall, writer);
+            } else if (typeConverters != null && typeConverters.containsKey(dbValue.getClass())) {
                 dbValue = new BindCallCustomParameter(dbValue);
                 // custom binding is required, object to be bound is wrapped (example NCHAR, NVARCHAR2, NCLOB on Oracle9)
                 databaseCall.bindParameter(writer, dbValue);
@@ -550,10 +570,10 @@ public class DatabasePlatform extends DatasourcePlatform {
                 databaseCall.bindParameter(writer, parameter);
                 nBoundParameters = 1;
             } else if (dbValue.getClass() == int[].class) {
-                nBoundParameters = printValuelist((int[])dbValue, databaseCall, writer);
+                nBoundParameters = printValuelist((int[]) dbValue, databaseCall, writer);
             } else if (dbValue instanceof AppendCallCustomParameter) {
                 // custom append is required (example BLOB, CLOB on Oracle8)
-                ((AppendCallCustomParameter)dbValue).append(writer);
+                ((AppendCallCustomParameter) dbValue).append(writer);
                 nBoundParameters = 1;
             } else if (dbValue instanceof BindCallCustomParameter) {
                 // custom binding is required, object to be bound is wrapped (example NCHAR, NVARCHAR2, NCLOB on Oracle9)
@@ -644,7 +664,7 @@ public class DatabasePlatform extends DatasourcePlatform {
      * INTERNAL:
      * Return the selection criteria used to IN batch fetching.
      */
-    public Expression buildBatchCriteria(ExpressionBuilder builder,Expression field) {
+    public Expression buildBatchCriteria(ExpressionBuilder builder, Expression field) {
 
         return field.in(
                 builder.getParameter(ForeignReferenceMapping.QUERY_BATCH_PARAMETER));
@@ -654,9 +674,9 @@ public class DatabasePlatform extends DatasourcePlatform {
      * INTERNAL:
      * Return the selection criteria used to IN batch fetching.
      */
-    public Expression buildBatchCriteriaForComplexId(ExpressionBuilder builder,List<Expression> fields) {
+    public Expression buildBatchCriteriaForComplexId(ExpressionBuilder builder, List<Expression> fields) {
         return builder.value(fields).in(
-                    builder.getParameter(ForeignReferenceMapping.QUERY_BATCH_PARAMETER));
+                builder.getParameter(ForeignReferenceMapping.QUERY_BATCH_PARAMETER));
     }
 
     /**
@@ -719,6 +739,7 @@ public class DatabasePlatform extends DatasourcePlatform {
 
         return classTypeMapping;
     }
+
     /**
      * Return the mapping of class types to database types for the schema framework.
      */
@@ -873,26 +894,25 @@ public class DatabasePlatform extends DatasourcePlatform {
      * INTERNAL:
      * Use the JDBC maxResults and firstResultIndex setting to compute a value to use when
      * limiting the results of a query in SQL.  These limits tend to be used in two ways.
-     *
+     * <p>
      * 1. MaxRows is the index of the last row to be returned (like JDBC maxResults)
      * 2. MaxRows is the number of rows to be returned
-     *
+     * <p>
      * By default, we assume case 1 and simply return the value of maxResults.  Subclasses
      * may provide an override
      *
      * @param readQuery
      * @param firstResultIndex
      * @param maxResults
-     *
      * @see org.eclipse.persistence.platform.database.MySQLPlatform
      */
-    public int computeMaxRowsForSQL(int firstResultIndex, int maxResults){
+    public int computeMaxRowsForSQL(int firstResultIndex, int maxResults) {
         return maxResults;
     }
 
     /**
-     *  Used for jdbc drivers which do not support autocommit to explicitly commit a transaction
-     *  This method is a no-op for databases which implement autocommit as expected.
+     * Used for jdbc drivers which do not support autocommit to explicitly commit a transaction
+     * This method is a no-op for databases which implement autocommit as expected.
      */
     public void commitTransaction(DatabaseAccessor accessor) throws SQLException {
         if (!supportsAutoCommit()) {
@@ -947,15 +967,15 @@ public class DatabasePlatform extends DatasourcePlatform {
             return null;
         }
         if (value.getClass() == ClassConstants.UTILDATE) {
-            return Helper.timestampFromDate((java.util.Date)value);
+            return Helper.timestampFromDate((java.util.Date) value);
         } else if (value instanceof Character) {
-            return ((Character)value).toString();
+            return ((Character) value).toString();
         } else if (value instanceof Calendar) {
-            return Helper.timestampFromDate(((Calendar)value).getTime());
+            return Helper.timestampFromDate(((Calendar) value).getTime());
         } else if (value instanceof BigInteger) {
-            return new BigDecimal((BigInteger)value);
+            return new BigDecimal((BigInteger) value);
         } else if (value instanceof char[]) {
-            return new String((char[])value);
+            return new String((char[]) value);
         } else if (value instanceof Character[]) {
             return convertObject(value, ClassConstants.STRING);
         } else if (value instanceof Byte[]) {
@@ -973,7 +993,7 @@ public class DatabasePlatform extends DatasourcePlatform {
         if (!(platform instanceof DatabasePlatform)) {
             return;
         }
-        DatabasePlatform databasePlatform = (DatabasePlatform)platform;
+        DatabasePlatform databasePlatform = (DatabasePlatform) platform;
         databasePlatform.setShouldTrimStrings(shouldTrimStrings());
         databasePlatform.setUsesNativeSQL(usesNativeSQL());
         databasePlatform.setUsesByteArrayBinding(usesByteArrayBinding());
@@ -1075,8 +1095,7 @@ public class DatabasePlatform extends DatasourcePlatform {
     }
 
     /**
-
-    /**
+     * /**
      * Used for view creation.
      */
     public String getCreateViewString() {
@@ -1092,22 +1111,22 @@ public class DatabasePlatform extends DatasourcePlatform {
 
     /**
      * This method determines if any special processing needs to occur prior to writing a field.
-     *
+     * <p>
      * It does things such as determining if a field must be bound and flagging the parameter as one
      * that must be bound.
      */
     @Override
     public Object getCustomModifyValueForCall(Call call, Object value, DatabaseField field, boolean shouldBind) {
 
-        if (typeConverters != null){
+        if (typeConverters != null) {
             StructConverter converter = typeConverters.get(field.getType());
 
             if (converter != null) {
                 Object bindValue = value;
                 if (bindValue == null) {
                     bindValue = new ObjectRelationalDatabaseField(field);
-                    ((ObjectRelationalDatabaseField)bindValue).setSqlType(java.sql.Types.STRUCT);
-                    ((ObjectRelationalDatabaseField)bindValue).setSqlTypeName(converter.getStructName());
+                    ((ObjectRelationalDatabaseField) bindValue).setSqlType(java.sql.Types.STRUCT);
+                    ((ObjectRelationalDatabaseField) bindValue).setSqlTypeName(converter.getStructName());
                 }
                 return new BindCallCustomParameter(bindValue);
             }
@@ -1158,9 +1177,10 @@ public class DatabasePlatform extends DatasourcePlatform {
      * ADVANCED:
      * Get the maximum length allowed by the database for a Varchar Parameter
      * This is used by subclasses when writing SQL for parameters
+     *
      * @see DB2Platform
      */
-    public int getCastSizeForVarcharParameter(){
+    public int getCastSizeForVarcharParameter() {
         return castSizeForVarcharParameter;
     }
 
@@ -1239,10 +1259,11 @@ public class DatabasePlatform extends DatasourcePlatform {
      * INTERNAL:
      * Returns the correct quote character to use around SQL Identifiers that contain
      * Space characters
-     * @deprecated
+     *
+     * @return The quote character for this platform
      * @see getStartDelimiter()
      * @see getEndDelimiter()
-     * @return The quote character for this platform
+     * @deprecated
      */
     @Deprecated
     @Override
@@ -1285,7 +1306,7 @@ public class DatabasePlatform extends DatasourcePlatform {
                 return getJDBCType(ConversionManager.getObjectClass(field.getType()));
             }
         } else {
-            return getJDBCType((Class)null);
+            return getJDBCType((Class) null);
         }
     }
 
@@ -1317,18 +1338,18 @@ public class DatabasePlatform extends DatasourcePlatform {
             return Types.INTEGER;
         } else if (javaType == ClassConstants.NUMBER) {
             return Types.DECIMAL;
-        } else if (javaType == ClassConstants.SHORT ) {
+        } else if (javaType == ClassConstants.SHORT) {
             return Types.SMALLINT;
-        } else if (javaType == ClassConstants.CALENDAR ) {
+        } else if (javaType == ClassConstants.CALENDAR) {
             return Types.TIMESTAMP;
-        } else if (javaType == ClassConstants.UTILDATE ) {
+        } else if (javaType == ClassConstants.UTILDATE) {
             return Types.TIMESTAMP;
         } else if (javaType == ClassConstants.TIME) {
             return Types.TIME;
         } else if (javaType == ClassConstants.SQLDATE) {
             return Types.DATE;
         } else if (javaType == ClassConstants.TIMESTAMP ||
-            javaType == ClassConstants.UTILDATE) { //bug 5237080, return TIMESTAMP for java.util.Date as well
+                javaType == ClassConstants.UTILDATE) { //bug 5237080, return TIMESTAMP for java.util.Date as well
             return Types.TIMESTAMP;
         } else if (javaType == ClassConstants.ABYTE) {
             return Types.LONGVARBINARY;
@@ -1413,17 +1434,18 @@ public class DatabasePlatform extends DatasourcePlatform {
      * INTERNAL:
      * Get the object from the JDBC Result set.  Added to allow other platforms to
      * override.
+     *
      * @see org.eclipse.persistence.oraclespecific.Oracle9Platform
      */
     public Object getObjectFromResultSet(ResultSet resultSet, int columnNumber, int type, AbstractSession session) throws java.sql.SQLException {
         Object objectFromResultSet = resultSet.getObject(columnNumber);
-        if (objectFromResultSet != null){
-            if(structConverters != null && type == Types.STRUCT){
-                String structType = ((Struct)objectFromResultSet).getSQLTypeName();
+        if (objectFromResultSet != null) {
+            if (structConverters != null && type == Types.STRUCT) {
+                String structType = ((Struct) objectFromResultSet).getSQLTypeName();
                 if (getStructConverters().containsKey(structType)) {
-                    return getStructConverters().get(structType).convertToObject((Struct)objectFromResultSet);
+                    return getStructConverters().get(structType).convertToObject((Struct) objectFromResultSet);
                 }
-            } else if(type == Types_SQLXML) {
+            } else if (type == Types_SQLXML) {
                 return JavaPlatform.getStringAndFreeSQLXML(objectFromResultSet);
             }
         }
@@ -1440,10 +1462,11 @@ public class DatabasePlatform extends DatasourcePlatform {
 
     /**
      * Used to allow platforms to define their own index prefixes
+     *
      * @param isUniqueField
      * @return
      */
-    public String getIndexNamePrefix(boolean isUniqueSetOnField){
+    public String getIndexNamePrefix(boolean isUniqueSetOnField) {
         return "IX_";
     }
 
@@ -1459,7 +1482,7 @@ public class DatabasePlatform extends DatasourcePlatform {
      * Used for determining if an SQL exception was communication based. This SQL should be
      * as efficient as possible and ensure a round trip to the database.
      */
-    public String getPingSQL(){
+    public String getPingSQL() {
         return pingSQL;
     }
 
@@ -1493,7 +1516,7 @@ public class DatabasePlatform extends DatasourcePlatform {
 
     public String getQualifiedSequenceTableName() {
         if (getDefaultSequence() instanceof TableSequence) {
-            return getQualifiedName(((TableSequence)getDefaultSequence()).getTableName());
+            return getQualifiedName(((TableSequence) getDefaultSequence()).getTableName());
         } else {
             throw ValidationException.wrongSequenceType(Helper.getShortClassName(getDefaultSequence()), "getTableName");
         }
@@ -1549,7 +1572,7 @@ public class DatabasePlatform extends DatasourcePlatform {
 
     public String getSequenceCounterFieldName() {
         if (getDefaultSequence() instanceof TableSequence) {
-            return ((TableSequence)getDefaultSequence()).getCounterFieldName();
+            return ((TableSequence) getDefaultSequence()).getCounterFieldName();
         } else {
             throw ValidationException.wrongSequenceType(Helper.getShortClassName(getDefaultSequence()), "getCounterFieldName");
         }
@@ -1557,7 +1580,7 @@ public class DatabasePlatform extends DatasourcePlatform {
 
     public String getSequenceNameFieldName() {
         if (getDefaultSequence() instanceof TableSequence) {
-            return ((TableSequence)getDefaultSequence()).getNameFieldName();
+            return ((TableSequence) getDefaultSequence()).getNameFieldName();
         } else {
             throw ValidationException.wrongSequenceType(Helper.getShortClassName(getDefaultSequence()), "getNameFieldName");
         }
@@ -1570,8 +1593,8 @@ public class DatabasePlatform extends DatasourcePlatform {
 
     public String getSequenceTableName() {
         if (getDefaultSequence() instanceof TableSequence) {
-            String tableName = ((TableSequence)getDefaultSequence()).getTableName();
-            if(tableName.length() == 0) {
+            String tableName = ((TableSequence) getDefaultSequence()).getTableName();
+            if (tableName.length() == 0) {
                 tableName = this.getDefaultSequenceTableName();
             }
             return tableName;
@@ -1637,7 +1660,7 @@ public class DatabasePlatform extends DatasourcePlatform {
      * Return true is the given exception occurred as a result of a lock
      * time out exception (WAIT clause). If sub-platform supports this clause,
      * this method should be necessary checks should be made.
-     *
+     * <p>
      * By default though, this method return false.
      *
      * @see OraclePlatform.
@@ -1663,7 +1686,7 @@ public class DatabasePlatform extends DatasourcePlatform {
     }
 
     /**
-     *    Builds a table of maximum numeric values keyed on java class. This is used for type testing but
+     * Builds a table of maximum numeric values keyed on java class. This is used for type testing but
      * might also be useful to end users attempting to sanitize values.
      * <p><b>NOTE</b>: BigInteger & BigDecimal maximums are dependent upon their precision & Scale
      */
@@ -1682,7 +1705,7 @@ public class DatabasePlatform extends DatasourcePlatform {
     }
 
     /**
-     *    Builds a table of minimum numeric values keyed on java class. This is used for type testing but
+     * Builds a table of minimum numeric values keyed on java class. This is used for type testing but
      * might also be useful to end users attempting to sanitize values.
      * <p><b>NOTE</b>: BigInteger & BigDecimal minimums are dependent upon their precision & Scale
      */
@@ -1702,7 +1725,7 @@ public class DatabasePlatform extends DatasourcePlatform {
 
     /**
      * Internal: Allows setting the batch size on the statement
-     *  Is used with parameterized SQL, and should only be passed in prepared statements
+     * Is used with parameterized SQL, and should only be passed in prepared statements
      *
      * @return - statement to be used for batch writing
      */
@@ -1823,8 +1846,8 @@ public class DatabasePlatform extends DatasourcePlatform {
      * regardless of the return value of this method.
      *
      * @return whether unique constraints should be declared as part of the
-     *         CREATE TABLE statement instead of in separate ALTER TABLE
-     *         ADD/DROP statements.
+     * CREATE TABLE statement instead of in separate ALTER TABLE
+     * ADD/DROP statements.
      */
     public boolean requiresUniqueConstraintCreationOnTableCreate() {
         return false;
@@ -1834,19 +1857,20 @@ public class DatabasePlatform extends DatasourcePlatform {
      * INTERNAL:
      * Used by Exists queries because they just need to select a single row.
      * In most databases, we will select one of the primary key fields.
-     *
+     * <p>
      * On databases where, for some reason we cannot select one of the key fields
      * this method can be overridden
-     * @param subselect
      *
+     * @param subselect
      * @see SymfowarePlatform
      */
-    public void retrieveFirstPrimaryKeyOrOne(ReportQuery subselect){
+    public void retrieveFirstPrimaryKeyOrOne(ReportQuery subselect) {
         subselect.setShouldRetrieveFirstPrimaryKey(true);
     }
+
     /**
-     *  Used for jdbc drivers which do not support autocommit to explicitly rollback a transaction
-     *  This method is a no-op for databases which implement autocommit as expected.
+     * Used for jdbc drivers which do not support autocommit to explicitly rollback a transaction
+     * This method is a no-op for databases which implement autocommit as expected.
      */
     public void rollbackTransaction(DatabaseAccessor accessor) throws SQLException {
         if (!supportsAutoCommit()) {
@@ -1858,9 +1882,10 @@ public class DatabasePlatform extends DatasourcePlatform {
      * ADVANCED:
      * Set the maximum length allowed by the database for a Varchar Parameter
      * This is used by subclasses when writing SQL for parameters
+     *
      * @see DB2Platform
      */
-    public void setCastSizeForVarcharParameter(int maxLength){
+    public void setCastSizeForVarcharParameter(int maxLength) {
         castSizeForVarcharParameter = maxLength;
     }
 
@@ -1900,7 +1925,7 @@ public class DatabasePlatform extends DatasourcePlatform {
 
     public void setSequenceCounterFieldName(String name) {
         if (getDefaultSequence() instanceof TableSequence) {
-            ((TableSequence)getDefaultSequence()).setCounterFieldName(name);
+            ((TableSequence) getDefaultSequence()).setCounterFieldName(name);
         } else {
             if (!name.equals((new TableSequence()).getCounterFieldName())) {
                 ValidationException.wrongSequenceType(Helper.getShortClassName(getDefaultSequence()), "setCounterFieldName");
@@ -1910,7 +1935,7 @@ public class DatabasePlatform extends DatasourcePlatform {
 
     public void setSequenceNameFieldName(String name) {
         if (getDefaultSequence() instanceof TableSequence) {
-            ((TableSequence)getDefaultSequence()).setNameFieldName(name);
+            ((TableSequence) getDefaultSequence()).setNameFieldName(name);
         } else {
             if (!name.equals((new TableSequence()).getNameFieldName())) {
                 throw ValidationException.wrongSequenceType(Helper.getShortClassName(getDefaultSequence()), "setNameFieldName");
@@ -1920,7 +1945,7 @@ public class DatabasePlatform extends DatasourcePlatform {
 
     public void setSequenceTableName(String name) {
         if (getDefaultSequence() instanceof TableSequence) {
-            ((TableSequence)getDefaultSequence()).setTableName(name);
+            ((TableSequence) getDefaultSequence()).setTableName(name);
         } else {
             if (!name.equals((new TableSequence()).getTableName())) {
                 throw ValidationException.wrongSequenceType(Helper.getShortClassName(getDefaultSequence()), "setTableName");
@@ -1994,7 +2019,7 @@ public class DatabasePlatform extends DatasourcePlatform {
      * stored on the DatabaseTable or TableDefinition.
      * ie setTableCreationSuffix("engine=InnoDB");
      */
-    public void setTableCreationSuffix(String tableCreationSuffix){
+    public void setTableCreationSuffix(String tableCreationSuffix) {
         this.tableCreationSuffix = tableCreationSuffix;
     }
 
@@ -2034,12 +2059,12 @@ public class DatabasePlatform extends DatasourcePlatform {
      * that have optimistic locking, and so execution of statements on these objects will be
      * delayed until the batch statement is executed.  Only use this method with platforms that
      * have overridden the prepareBatchStatement, addBatch and executeBatch as required
-     *
+     * <p>
      * Current support is limited to the Oracle9Platform class.
      *
      * @param usesNativeBatchWriting - flag to turn on/off native batch writing
      */
-    public void setUsesNativeBatchWriting(boolean usesNativeBatchWriting){
+    public void setUsesNativeBatchWriting(boolean usesNativeBatchWriting) {
         this.usesNativeBatchWriting = usesNativeBatchWriting;
     }
 
@@ -2065,7 +2090,7 @@ public class DatabasePlatform extends DatasourcePlatform {
      * PUBLIC:
      * Set if SQL-Level pagination should be used for FirstResult and MaxRows settings.
      * Default is true.
-     *
+     * <p>
      * Note: This setting is used to disable SQL-level pagination on platforms for which it is
      * implemented.  On platforms where we use JDBC for pagination, it will be ignored
      */
@@ -2082,8 +2107,8 @@ public class DatabasePlatform extends DatasourcePlatform {
      * Changes the way that OuterJoins are done on the database.  With a value of
      * true, outerjoins are performed in the where clause using the outer join token
      * for that database.
-     *
-     *  With the value of false, outerjoins are performed in the from clause.
+     * <p>
+     * With the value of false, outerjoins are performed in the from clause.
      */
     public void setPrintOuterJoinInWhereClause(boolean printOuterJoinInWhereClause) {
         this.printOuterJoinInWhereClause = Boolean.valueOf(printOuterJoinInWhereClause);
@@ -2106,7 +2131,6 @@ public class DatabasePlatform extends DatasourcePlatform {
      * clause using {@link org.eclipse.persistence.internal.expressions.OuterJoinExpressionHolder}. Only works for
      * straight cases like this queue: select d from df$Doc d. This means that this parameter isn't used in the batch loading fields
      * for the fetch plan for example.
-     *
      */
     public void setPrintInheritanceTableJoinsInFromClause(boolean printInheritanceTableJoinsInFromClause) {
         this.printInheritanceTableJoinsInFromClause = printInheritanceTableJoinsInFromClause;
@@ -2137,8 +2161,8 @@ public class DatabasePlatform extends DatasourcePlatform {
      *
      * @return whether an index should be created explicitly for primary keys
      */
-     public boolean shouldCreateIndicesForPrimaryKeys() {
-         return false;
+    public boolean shouldCreateIndicesForPrimaryKeys() {
+        return false;
     }
 
     /**
@@ -2146,7 +2170,7 @@ public class DatabasePlatform extends DatasourcePlatform {
      * columns with a unique constraint. Symfoware does not.
      *
      * @return whether an index should be created explicitly for unique
-     *         constraints
+     * constraints
      */
     public boolean shouldCreateIndicesOnUniqueKeys() {
         return false;
@@ -2211,8 +2235,8 @@ public class DatabasePlatform extends DatasourcePlatform {
     }
 
     /**
-    * Some Platforms want the constraint name after the constraint definition.
-    */
+     * Some Platforms want the constraint name after the constraint definition.
+     */
     public boolean shouldPrintConstraintNameAfter() {
         return false;
     }
@@ -2229,7 +2253,7 @@ public class DatabasePlatform extends DatasourcePlatform {
      * Some database require outer joins to be given in the where clause, others require it in the from clause.
      */
     public boolean shouldPrintOuterJoinInWhereClause() {
-        if(this.printOuterJoinInWhereClause == null) {
+        if (this.printOuterJoinInWhereClause == null) {
             this.printOuterJoinInWhereClause = Boolean.FALSE;
         }
         return this.printOuterJoinInWhereClause;
@@ -2248,15 +2272,15 @@ public class DatabasePlatform extends DatasourcePlatform {
     }
 
     // cuba begin
+
     /**
      * If we need to print joins for the inherited tables. If true joins will be printed in the FROM
      * clause using {@link org.eclipse.persistence.internal.expressions.OuterJoinExpressionHolder}. Only works for
      * straight cases like this queue: select d from df$Doc d. This means that this parameter isn't used in the batch loading fields
      * for the fetch plan for example.
-     *
      */
     public boolean shouldPrintInheritanceTableJoinsInFromClause() {
-        return printInheritanceTableJoinsInFromClause;
+        return Boolean.TRUE.equals(printInheritanceTableJoinsInFromClause);
     }
     // cuba end
 
@@ -2289,7 +2313,7 @@ public class DatabasePlatform extends DatasourcePlatform {
      * Should the variable name of a stored procedure call be printed as part of the procedure call
      * e.g. EXECUTE PROCEDURE MyStoredProc(myvariable = ?)
      */
-    public boolean shouldPrintStoredProcedureArgumentNameInCall(){
+    public boolean shouldPrintStoredProcedureArgumentNameInCall() {
         return true;
     }
 
@@ -2304,8 +2328,8 @@ public class DatabasePlatform extends DatasourcePlatform {
     @Override
     public boolean shouldUseCustomModifyForCall(DatabaseField field) {
         return (field.getSqlType() == Types.STRUCT &&
-            (typeConverters != null && typeConverters.containsKey(field.getType()))) ||
-            super.shouldUseCustomModifyForCall(field);
+                (typeConverters != null && typeConverters.containsKey(field.getType()))) ||
+                super.shouldUseCustomModifyForCall(field);
     }
 
     /**
@@ -2319,7 +2343,7 @@ public class DatabasePlatform extends DatasourcePlatform {
      * PUBLIC:
      * Return if Oracle ROWNUM pagination should be used for FirstResult and MaxRows settings.
      * Default is true.
-     *
+     * <p>
      * Note: This setting is used to disable SQL-level pagination on platforms for which it is
      * implemented.  On platforms where we use JDBC for pagination, it will be ignored
      */
@@ -2389,21 +2413,21 @@ public class DatabasePlatform extends DatasourcePlatform {
      * @return - number of rows modified/deleted by this statement
      */
     public int executeBatch(Statement statement, boolean isStatementPrepared) throws java.sql.SQLException {
-       int[] rowCounts = statement.executeBatch();
-       int rowCount = 0;
-       // Otherwise check if the row counts were returned.
-       for (int count : rowCounts) {
-           if (count > 0) {
-               // The row count will be matched with the statement count.
-               rowCount ++;
-           } else {
-               // The row counts were not known, check for a total row count.
-               // If the total count is not known, then the update should fail,
-               // and the platform must override canBatchWriteWithOptimisticLocking() to return false.
-               return statement.getUpdateCount();
-           }
-       }
-       return rowCount;
+        int[] rowCounts = statement.executeBatch();
+        int rowCount = 0;
+        // Otherwise check if the row counts were returned.
+        for (int count : rowCounts) {
+            if (count > 0) {
+                // The row count will be matched with the statement count.
+                rowCount++;
+            } else {
+                // The row counts were not known, check for a total row count.
+                // If the total count is not known, then the update should fail,
+                // and the platform must override canBatchWriteWithOptimisticLocking() to return false.
+                return statement.getUpdateCount();
+            }
+        }
+        return rowCount;
     }
 
     /**
@@ -2417,13 +2441,13 @@ public class DatabasePlatform extends DatasourcePlatform {
         if (!dbCall.getReturnsResultSet()) {// no result set is expected
             if (dbCall.isCursorOutputProcedure()) {
                 result = accessor.executeNoSelect(dbCall, statement, session);
-                resultSet = (ResultSet)((CallableStatement)statement).getObject(dbCall.getCursorOutIndex());
+                resultSet = (ResultSet) ((CallableStatement) statement).getObject(dbCall.getCursorOutIndex());
             } else {
                 accessor.executeDirectNoSelect(statement, dbCall, session);
 
                 // Meaning we have at least one out parameter (or out cursors).
                 if (dbCall.shouldBuildOutputRow() || dbCall.hasOutputCursors()) {
-                    result = accessor.buildOutputRow((CallableStatement)statement, dbCall, session);
+                    result = accessor.buildOutputRow((CallableStatement) statement, dbCall, session);
 
                     // ReadAllQuery may be returning just output params, or they
                     // may be executing a DataReadQuery, which also assumes a vector
@@ -2457,8 +2481,8 @@ public class DatabasePlatform extends DatasourcePlatform {
 
         // If the output is not allowed with the result set, we must hold off till the result set has
         // been processed before accessing the out parameters.
-        if (dbCall.shouldBuildOutputRow() && ! isOutputAllowWithResultSet()) {
-            AbstractRecord outputRow = accessor.buildOutputRow((CallableStatement)statement, dbCall, session);
+        if (dbCall.shouldBuildOutputRow() && !isOutputAllowWithResultSet()) {
+            AbstractRecord outputRow = accessor.buildOutputRow((CallableStatement) statement, dbCall, session);
             dbCall.getQuery().setProperty("output", outputRow);
             session.getEventManager().outputParametersDetected(outputRow, dbCall);
         }
@@ -2481,14 +2505,14 @@ public class DatabasePlatform extends DatasourcePlatform {
      * and is heavily optimized for common types.
      */
     public void setParameterValueInDatabaseCall(Object parameter,
-                PreparedStatement statement, int index, AbstractSession session)
-                throws SQLException {
+                                                PreparedStatement statement, int index, AbstractSession session)
+            throws SQLException {
         // Process common types first.
         if (parameter instanceof String) {
             // Check for stream binding of large strings.
-            if (usesStringBinding() && (((String)parameter).length() > getStringBindingSize())) {
-                CharArrayReader reader = new CharArrayReader(((String)parameter).toCharArray());
-                statement.setCharacterStream(index, reader, ((String)parameter).length());
+            if (usesStringBinding() && (((String) parameter).length() > getStringBindingSize())) {
+                CharArrayReader reader = new CharArrayReader(((String) parameter).toCharArray());
+                statement.setCharacterStream(index, reader, ((String) parameter).length());
             } else {
                 if (shouldUseGetSetNString()) {
                     statement.setNString(index, (String) parameter);
@@ -2502,7 +2526,7 @@ public class DatabasePlatform extends DatasourcePlatform {
                 statement.setInt(index, number.intValue());
             } else if (number instanceof Long) {
                 statement.setLong(index, number.longValue());
-            }  else if (number instanceof BigDecimal) {
+            } else if (number instanceof BigDecimal) {
                 statement.setBigDecimal(index, (BigDecimal) number);
             } else if (number instanceof Double) {
                 statement.setDouble(index, number.doubleValue());
@@ -2518,19 +2542,19 @@ public class DatabasePlatform extends DatasourcePlatform {
             } else {
                 statement.setObject(index, parameter);
             }
-        }  else if (parameter instanceof java.sql.Date){
-            statement.setDate(index,(java.sql.Date)parameter);
-        }  else if (parameter instanceof java.time.LocalDate){
+        } else if (parameter instanceof java.sql.Date) {
+            statement.setDate(index, (java.sql.Date) parameter);
+        } else if (parameter instanceof java.time.LocalDate) {
             statement.setDate(index, java.sql.Date.valueOf((java.time.LocalDate) parameter));
-        } else if (parameter instanceof java.sql.Timestamp){
-            statement.setTimestamp(index,(java.sql.Timestamp)parameter);
-        } else if (parameter instanceof java.time.LocalDateTime){
+        } else if (parameter instanceof java.sql.Timestamp) {
+            statement.setTimestamp(index, (java.sql.Timestamp) parameter);
+        } else if (parameter instanceof java.time.LocalDateTime) {
             statement.setTimestamp(index, java.sql.Timestamp.valueOf((java.time.LocalDateTime) parameter));
         } else if (parameter instanceof java.time.OffsetDateTime) {
             statement.setTimestamp(index, java.sql.Timestamp.from(((java.time.OffsetDateTime) parameter).toInstant()));
-        } else if (parameter instanceof java.sql.Time){
-            statement.setTime(index,(java.sql.Time)parameter);
-        } else if (parameter instanceof java.time.LocalTime){
+        } else if (parameter instanceof java.sql.Time) {
+            statement.setTime(index, (java.sql.Time) parameter);
+        } else if (parameter instanceof java.time.LocalTime) {
             java.time.LocalTime lt = (java.time.LocalTime) parameter;
             java.sql.Timestamp ts = new java.sql.Timestamp(
                     70, 0, 1, lt.getHour(), lt.getMinute(), lt.getSecond(), lt.getNano());
@@ -2544,35 +2568,35 @@ public class DatabasePlatform extends DatasourcePlatform {
             statement.setBoolean(index, ((Boolean) parameter).booleanValue());
         } else if (parameter == null) {
             // Normally null is passed as a DatabaseField so the type is included, but in some case may be passed directly.
-            statement.setNull(index, getJDBCType((Class)null));
+            statement.setNull(index, getJDBCType((Class) null));
         } else if (parameter instanceof DatabaseField) {
-            setNullFromDatabaseField((DatabaseField)parameter, statement, index);
+            setNullFromDatabaseField((DatabaseField) parameter, statement, index);
         } else if (parameter instanceof byte[]) {
             if (usesStreamsForBinding()) {
-                ByteArrayInputStream inputStream = new ByteArrayInputStream((byte[])parameter);
-                statement.setBinaryStream(index, inputStream, ((byte[])parameter).length);
+                ByteArrayInputStream inputStream = new ByteArrayInputStream((byte[]) parameter);
+                statement.setBinaryStream(index, inputStream, ((byte[]) parameter).length);
             } else {
-                statement.setBytes(index, (byte[])parameter);
+                statement.setBytes(index, (byte[]) parameter);
             }
         }
         // Next process types that need conversion.
         else if (parameter instanceof Calendar) {
-            statement.setTimestamp(index, Helper.timestampFromDate(((Calendar)parameter).getTime()));
+            statement.setTimestamp(index, Helper.timestampFromDate(((Calendar) parameter).getTime()));
         } else if (parameter.getClass() == ClassConstants.UTILDATE) {
             statement.setTimestamp(index, Helper.timestampFromDate((java.util.Date) parameter));
         } else if (parameter instanceof Character) {
-            statement.setString(index, ((Character)parameter).toString());
+            statement.setString(index, ((Character) parameter).toString());
         } else if (parameter instanceof char[]) {
-            statement.setString(index, new String((char[])parameter));
+            statement.setString(index, new String((char[]) parameter));
         } else if (parameter instanceof Character[]) {
-            statement.setString(index, (String)convertObject(parameter, ClassConstants.STRING));
+            statement.setString(index, (String) convertObject(parameter, ClassConstants.STRING));
         } else if (parameter instanceof Byte[]) {
-            statement.setBytes(index, (byte[])convertObject(parameter, ClassConstants.APBYTE));
+            statement.setBytes(index, (byte[]) convertObject(parameter, ClassConstants.APBYTE));
         } else if (parameter instanceof SQLXML) {
             statement.setSQLXML(index, (SQLXML) parameter);
         } else if (parameter instanceof BindCallCustomParameter) {
-            ((BindCallCustomParameter)(parameter)).set(this, statement, index, session);
-        } else if (typeConverters != null && typeConverters.containsKey(parameter.getClass())){
+            ((BindCallCustomParameter) (parameter)).set(this, statement, index, session);
+        } else if (typeConverters != null && typeConverters.containsKey(parameter.getClass())) {
             StructConverter converter = typeConverters.get(parameter.getClass());
             parameter = converter.convertToStruct(parameter, getConnection(session, statement.getConnection()));
             statement.setObject(index, parameter);
@@ -2587,7 +2611,7 @@ public class DatabasePlatform extends DatasourcePlatform {
         // Fix for bug 2730536: for ARRAY/REF/STRUCT types must pass in the
         // user defined type to setNull as well.
         if (databaseField instanceof ObjectRelationalDatabaseField) {
-            ObjectRelationalDatabaseField field = (ObjectRelationalDatabaseField)databaseField;
+            ObjectRelationalDatabaseField field = (ObjectRelationalDatabaseField) databaseField;
             statement.setNull(index, field.getSqlType(), field.getSqlTypeName());
         } else {
             int jdbcType = getJDBCTypeForSetNull(databaseField);
@@ -2614,7 +2638,7 @@ public class DatabasePlatform extends DatasourcePlatform {
         return usesJDBCBatchWriting;
     }
 
-    public boolean usesNativeBatchWriting(){
+    public boolean usesNativeBatchWriting() {
         return usesNativeBatchWriting;
     }
 
@@ -2682,9 +2706,9 @@ public class DatabasePlatform extends DatasourcePlatform {
      * either supportsLocalTempTables() or supportsGlobalTempTables()
      * method.
      */
-     public boolean supportsTempTables() {
-         return supportsLocalTempTables() || supportsGlobalTempTables();
-     }
+    public boolean supportsTempTables() {
+        return supportsLocalTempTables() || supportsGlobalTempTables();
+    }
 
     /**
      * INTERNAL:
@@ -2695,9 +2719,9 @@ public class DatabasePlatform extends DatasourcePlatform {
      * execution and dropped in the end of it.
      * Override this method if the platform supports local temporary tables.
      */
-     public boolean supportsLocalTempTables() {
-         return false;
-     }
+    public boolean supportsLocalTempTables() {
+        return false;
+    }
 
     /**
      * INTERNAL:
@@ -2712,9 +2736,9 @@ public class DatabasePlatform extends DatasourcePlatform {
      * Override this method if the platform supports global temporary tables.
      * Note that this method is ignored in case supportsLocalTempTables() returns true.
      */
-     public boolean supportsGlobalTempTables() {
-         return false;
-     }
+    public boolean supportsGlobalTempTables() {
+        return false;
+    }
 
     /**
      * INTERNAL:
@@ -2724,19 +2748,20 @@ public class DatabasePlatform extends DatasourcePlatform {
      * "CREATE GLOBAL TEMPORARY TABLE ".
      * Don't forget to end it with a space.
      */
-     protected String getCreateTempTableSqlPrefix() {
-         throw ValidationException.platformDoesNotOverrideGetCreateTempTableSqlPrefix(Helper.getShortClassName(this));
-     }
+    protected String getCreateTempTableSqlPrefix() {
+        throw ValidationException.platformDoesNotOverrideGetCreateTempTableSqlPrefix(Helper.getShortClassName(this));
+    }
 
     /**
      * INTERNAL:
      * May override this method if the platform support temporary tables.
-     * @parameter DatabaseTable table is original table for which temp table is created.
+     *
      * @return DatabaseTable temorary table
+     * @parameter DatabaseTable table is original table for which temp table is created.
      */
-     public DatabaseTable getTempTableForTable(DatabaseTable table) {
-         return new DatabaseTable("TL_" + table.getName(), table.getTableQualifier(), table.shouldUseDelimiters(), getStartDelimiter(), getEndDelimiter());
-     }
+    public DatabaseTable getTempTableForTable(DatabaseTable table) {
+        return new DatabaseTable("TL_" + table.getName(), table.getTableQualifier(), table.shouldUseDelimiters(), getStartDelimiter(), getEndDelimiter());
+    }
 
     /**
      * INTERNAL:
@@ -2746,9 +2771,9 @@ public class DatabasePlatform extends DatasourcePlatform {
      * " ON COMMIT DELETE ROWS"
      * Don't forget to begin it with a space.
      */
-     protected String getCreateTempTableSqlSuffix() {
-         return "";
-     }
+    protected String getCreateTempTableSqlSuffix() {
+        return "";
+    }
 
     /**
      * INTERNAL:
@@ -2762,12 +2787,13 @@ public class DatabasePlatform extends DatasourcePlatform {
      * getCreateTempTableSqlBodyForTable(table) + getCreateTempTableSqlSuffix().
      * Don't forget to begin it with a space.
      * Example: " LIKE " + table.getQualifiedName();
+     *
      * @parameter DatabaseTable table is original table for which temp table is created.
      * @result String
      */
-     protected String getCreateTempTableSqlBodyForTable(DatabaseTable table) {
-         return null;
-     }
+    protected String getCreateTempTableSqlBodyForTable(DatabaseTable table) {
+        return null;
+    }
 
     /**
      * INTERNAL:
@@ -2790,6 +2816,7 @@ public class DatabasePlatform extends DatasourcePlatform {
      * therefore global temp table should contain all mapped fields (allFields).
      * Precondition: supportsTempTables() == true.
      * Precondition: pkFields contained in usedFields contained in allFields
+     *
      * @parameter Writer writer for writing the sql
      * @parameter DatabaseTable table is original table for which temp table is created.
      * @parameter AbstractSession session.
@@ -2797,16 +2824,15 @@ public class DatabasePlatform extends DatasourcePlatform {
      * @parameter Collection usedFields - fields that will be used by operation for which temp table is created.
      * @parameter Collection allFields - all mapped fields for the original table.
      */
-     public void writeCreateTempTableSql(Writer writer, DatabaseTable table, AbstractSession session,
+    public void writeCreateTempTableSql(Writer writer, DatabaseTable table, AbstractSession session,
                                         Collection pkFields,
                                         Collection usedFields,
-                                        Collection allFields) throws IOException
-    {
+                                        Collection allFields) throws IOException {
         String body = getCreateTempTableSqlBodyForTable(table);
-        if(body == null) {
+        if (body == null) {
             TableDefinition tableDef = new TableDefinition();
             Collection fields;
-            if(supportsLocalTempTables()) {
+            if (supportsLocalTempTables()) {
                 fields = usedFields;
             } else {
                 // supportsGlobalTempTables() == true
@@ -2814,18 +2840,18 @@ public class DatabasePlatform extends DatasourcePlatform {
             }
             Iterator itFields = fields.iterator();
             while (itFields.hasNext()) {
-                DatabaseField field = (DatabaseField)itFields.next();
+                DatabaseField field = (DatabaseField) itFields.next();
                 FieldDefinition fieldDef;
                 //gfbug3307, should use columnDefinition if it was defined.
-                if ((field.getColumnDefinition()!= null) && (field.getColumnDefinition().length() == 0)) {
+                if ((field.getColumnDefinition() != null) && (field.getColumnDefinition().length() == 0)) {
                     Class type = ConversionManager.getObjectClass(field.getType());
                     // Default type to VARCHAR, if unknown.
                     if (type == null) {
                         type = ClassConstants.STRING;
                     }
-                   fieldDef = new FieldDefinition(field.getNameDelimited(this), type);
+                    fieldDef = new FieldDefinition(field.getNameDelimited(this), type);
                 } else {
-                   fieldDef = new FieldDefinition(field.getNameDelimited(this), field.getColumnDefinition());
+                    fieldDef = new FieldDefinition(field.getNameDelimited(this), field.getColumnDefinition());
                 }
                 if (pkFields.contains(field) && shouldTempTableSpecifyPrimaryKeys()) {
                     fieldDef.setIsPrimaryKey(true);
@@ -2850,11 +2876,12 @@ public class DatabasePlatform extends DatasourcePlatform {
      * and the generated sql doesn't work.
      * Write an sql string for insertion into the temporary table.
      * Precondition: supportsTempTables() == true.
+     *
      * @parameter Writer writer for writing the sql
      * @parameter DatabaseTable table is original table for which temp table is created.
      * @parameter Collection usedFields - fields that will be used by operation for which temp table is created.
      */
-     public void writeInsertIntoTableSql(Writer writer, DatabaseTable table, Collection usedFields) throws IOException {
+    public void writeInsertIntoTableSql(Writer writer, DatabaseTable table, Collection usedFields) throws IOException {
         writer.write("INSERT INTO ");
         writer.write(getTempTableForTable(table).getQualifiedNameDelimited(this));
 
@@ -2886,11 +2913,11 @@ public class DatabasePlatform extends DatasourcePlatform {
      * well as the value returned from the DatabasePlatform's getTableCreationSuffix()
      */
     public void writeTableCreationSuffix(Writer writer, String tableCreationSuffix) throws IOException {
-        if(tableCreationSuffix!=null && tableCreationSuffix.length() > 0) {
+        if (tableCreationSuffix != null && tableCreationSuffix.length() > 0) {
             writer.write(" " + tableCreationSuffix);
         }
         String defaultTableCreationSuffix = getTableCreationSuffix();
-        if (defaultTableCreationSuffix !=null && defaultTableCreationSuffix.length()>0) {
+        if (defaultTableCreationSuffix != null && defaultTableCreationSuffix.length() > 0) {
             writer.write(" " + defaultTableCreationSuffix);
         }
     }
@@ -2902,15 +2929,15 @@ public class DatabasePlatform extends DatasourcePlatform {
      * Write an sql string for updating the original table from the temporary table.
      * Precondition: supportsTempTables() == true.
      * Precondition: pkFields and assignFields don't intersect.
+     *
      * @parameter Writer writer for writing the sql
      * @parameter DatabaseTable table is original table for which temp table is created.
      * @parameter Collection pkFields - primary key fields for the original table.
      * @parameter Collection assignedFields - fields to be assigned a new value.
      */
-     public void writeUpdateOriginalFromTempTableSql(Writer writer, DatabaseTable table,
-                                                     Collection pkFields,
-                                                     Collection assignedFields) throws IOException
-    {
+    public void writeUpdateOriginalFromTempTableSql(Writer writer, DatabaseTable table,
+                                                    Collection pkFields,
+                                                    Collection assignedFields) throws IOException {
         writer.write("UPDATE ");
         String tableName = table.getQualifiedNameDelimited(this);
         writer.write(tableName);
@@ -2923,7 +2950,7 @@ public class DatabasePlatform extends DatasourcePlatform {
         writer.write(tempTableName);
         writeAutoJoinWhereClause(writer, null, tableName, pkFields, this);
         writer.write(") WHERE EXISTS(SELECT ");
-        writer.write(((DatabaseField)pkFields.iterator().next()).getNameDelimited(this));
+        writer.write(((DatabaseField) pkFields.iterator().next()).getNameDelimited(this));
         writer.write(" FROM ");
         writer.write(tempTableName);
         writeAutoJoinWhereClause(writer, null, tableName, pkFields, this);
@@ -2939,6 +2966,7 @@ public class DatabasePlatform extends DatasourcePlatform {
      * shouldAlwaysUseTempStorageForModifyAll()==true
      * May need to override this method in case it generates sql that doesn't work on the platform.
      * Precondition: supportsTempTables() == true.
+     *
      * @parameter Writer writer for writing the sql
      * @parameter DatabaseTable table is original table for which temp table is created.
      * @parameter DatabaseTable targetTable is a table from which to delete.
@@ -2946,15 +2974,14 @@ public class DatabasePlatform extends DatasourcePlatform {
      * @parameter Collection targetPkFields - primary key fields for the target table.
      * @parameter Collection assignedFields - fields to be assigned a new value.
      */
-     public void writeDeleteFromTargetTableUsingTempTableSql(Writer writer, DatabaseTable table, DatabaseTable targetTable,
-                                                     Collection pkFields,
-                                                     Collection targetPkFields, DatasourcePlatform platform) throws IOException
-    {
+    public void writeDeleteFromTargetTableUsingTempTableSql(Writer writer, DatabaseTable table, DatabaseTable targetTable,
+                                                            Collection pkFields,
+                                                            Collection targetPkFields, DatasourcePlatform platform) throws IOException {
         writer.write("DELETE FROM ");
         String targetTableName = targetTable.getQualifiedNameDelimited(this);
         writer.write(targetTableName);
         writer.write(" WHERE EXISTS(SELECT ");
-        writer.write(((DatabaseField)pkFields.iterator().next()).getNameDelimited(platform));
+        writer.write(((DatabaseField) pkFields.iterator().next()).getNameDelimited(platform));
         writer.write(" FROM ");
         String tempTableName = getTempTableForTable(table).getQualifiedNameDelimited(this);
         writer.write(tempTableName);
@@ -2962,45 +2989,45 @@ public class DatabasePlatform extends DatasourcePlatform {
         writer.write(")");
     }
 
-     public boolean wasFailureCommunicationBased(SQLException exception, Connection connection, AbstractSession sessionForProfile){
-         if (connection == null) {
-             //Without a connection we are  unable to determine what caused the error so return false.
-             //The only case where connection will be null should be External Connection Pooling so
-             //returning false is ok as there is no connection management requirement
-             return false;
-         } else if (this.pingSQL == null) {
-             // By default use the JDBC isValid API unless a ping SQL has been set.
-             // The ping SQL is set by most platforms, but user could set to null to used optimized JDBC check if desired.
-             try {
-                 return connection.isValid(IS_VALID_TIMEOUT);
-             } catch (Throwable failed) {
-                 // Catch throwable as old JDBC drivers may not support isValid.
-                 return false;
-             }
-         }
-         PreparedStatement statement = null;
-         try{
-             sessionForProfile.startOperationProfile(SessionProfiler.ConnectionPing);
-             if (sessionForProfile.shouldLog(SessionLog.FINE, SessionLog.SQL)) {// Avoid printing if no logging required.
-                 sessionForProfile.log(SessionLog.FINE, SessionLog.SQL, getPingSQL(), (Object[])null, null, false);
-             }
-             statement = connection.prepareStatement(getPingSQL());
-             ResultSet result = statement.executeQuery();
-             result.close();
-             statement.close();
-         }catch (SQLException ex){
-             try{
-                 //try to close statement again in case the query or result.close() caused an exception.
-                 if (statement != null) statement.close();
-             }catch (SQLException exception2){
-                 //ignore;
-             }
-             return true;
-         }finally{
-             sessionForProfile.endOperationProfile(SessionProfiler.ConnectionPing);
-         }
-         return false;
-     }
+    public boolean wasFailureCommunicationBased(SQLException exception, Connection connection, AbstractSession sessionForProfile) {
+        if (connection == null) {
+            //Without a connection we are  unable to determine what caused the error so return false.
+            //The only case where connection will be null should be External Connection Pooling so
+            //returning false is ok as there is no connection management requirement
+            return false;
+        } else if (this.pingSQL == null) {
+            // By default use the JDBC isValid API unless a ping SQL has been set.
+            // The ping SQL is set by most platforms, but user could set to null to used optimized JDBC check if desired.
+            try {
+                return connection.isValid(IS_VALID_TIMEOUT);
+            } catch (Throwable failed) {
+                // Catch throwable as old JDBC drivers may not support isValid.
+                return false;
+            }
+        }
+        PreparedStatement statement = null;
+        try {
+            sessionForProfile.startOperationProfile(SessionProfiler.ConnectionPing);
+            if (sessionForProfile.shouldLog(SessionLog.FINE, SessionLog.SQL)) {// Avoid printing if no logging required.
+                sessionForProfile.log(SessionLog.FINE, SessionLog.SQL, getPingSQL(), (Object[]) null, null, false);
+            }
+            statement = connection.prepareStatement(getPingSQL());
+            ResultSet result = statement.executeQuery();
+            result.close();
+            statement.close();
+        } catch (SQLException ex) {
+            try {
+                //try to close statement again in case the query or result.close() caused an exception.
+                if (statement != null) statement.close();
+            } catch (SQLException exception2) {
+                //ignore;
+            }
+            return true;
+        } finally {
+            sessionForProfile.endOperationProfile(SessionProfiler.ConnectionPing);
+        }
+        return false;
+    }
 
     /**
      * INTERNAL:
@@ -3009,11 +3036,12 @@ public class DatabasePlatform extends DatasourcePlatform {
      * Drop a local temp table or delete all from a global temp table (so that it's
      * ready to be used again in the same transaction).
      * Precondition: supportsTempTables() == true.
+     *
      * @parameter Writer writer for writing the sql
      * @parameter DatabaseTable table is original table for which temp table is created.
      */
-     public void writeCleanUpTempTableSql(Writer writer, DatabaseTable table) throws IOException {
-        if(supportsLocalTempTables()) {
+    public void writeCleanUpTempTableSql(Writer writer, DatabaseTable table) throws IOException {
+        if (supportsLocalTempTables()) {
             writer.write("DROP TABLE ");
         } else {
             // supportsGlobalTempTables() == true
@@ -3036,11 +3064,11 @@ public class DatabasePlatform extends DatasourcePlatform {
         return false;
     }
 
-   /**
-    * INTERNAL:
-    * May need to override this method if the sql generated for UpdateAllQuery
-    * using temp tables fails in case parameter binding is used.
-    */
+    /**
+     * INTERNAL:
+     * May need to override this method if the sql generated for UpdateAllQuery
+     * using temp tables fails in case parameter binding is used.
+     */
     public boolean dontBindUpdateAllQueryUsingTempTables() {
         return false;
     }
@@ -3052,13 +3080,13 @@ public class DatabasePlatform extends DatasourcePlatform {
     protected static void writeFieldsList(Writer writer, Collection fields, DatasourcePlatform platform) throws IOException {
         boolean isFirst = true;
         Iterator itFields = fields.iterator();
-        while(itFields.hasNext()) {
-            if(isFirst) {
+        while (itFields.hasNext()) {
+            if (isFirst) {
                 isFirst = false;
             } else {
                 writer.write(", ");
             }
-            DatabaseField field = (DatabaseField)itFields.next();
+            DatabaseField field = (DatabaseField) itFields.next();
             writer.write(field.getNameDelimited(platform));
         }
     }
@@ -3088,6 +3116,7 @@ public class DatabasePlatform extends DatasourcePlatform {
     protected static void writeFieldsAutoClause(Writer writer, String tableName1, String tableName2, Collection fields, String separator, DatasourcePlatform platform) throws IOException {
         writeFields(writer, tableName1, tableName2, fields, fields, separator, platform);
     }
+
     /**
      * INTERNAL:
      * helper method, don't override.
@@ -3105,24 +3134,24 @@ public class DatabasePlatform extends DatasourcePlatform {
         boolean isFirst = true;
         Iterator itFields1 = fields1.iterator();
         Iterator itFields2 = fields2.iterator();
-        while(itFields1.hasNext()) {
-            if(isFirst) {
+        while (itFields1.hasNext()) {
+            if (isFirst) {
                 isFirst = false;
             } else {
                 writer.write(separator);
             }
-            if(tableName1 != null) {
+            if (tableName1 != null) {
                 writer.write(tableName1);
                 writer.write(".");
             }
-            String fieldName1 = ((DatabaseField)itFields1.next()).getNameDelimited(platform);
+            String fieldName1 = ((DatabaseField) itFields1.next()).getNameDelimited(platform);
             writer.write(fieldName1);
             writer.write(" = ");
-            if(tableName2 != null) {
+            if (tableName2 != null) {
                 writer.write(tableName2);
                 writer.write(".");
             }
-            String fieldName2 = ((DatabaseField)itFields2.next()).getNameDelimited(platform);
+            String fieldName2 = ((DatabaseField) itFields2.next()).getNameDelimited(platform);
             writer.write(fieldName2);
         }
     }
@@ -3139,7 +3168,7 @@ public class DatabasePlatform extends DatasourcePlatform {
         DatabaseField field = new DatabaseField(qualifiedFieldName, getStartDelimiter(), getEndDelimiter());
         Iterator descriptors = session.getDescriptors().values().iterator();
         while (descriptors.hasNext()) {
-            ClassDescriptor descriptor = (ClassDescriptor)descriptors.next();
+            ClassDescriptor descriptor = (ClassDescriptor) descriptors.next();
             if (!descriptor.usesSequenceNumbers()) {
                 continue;
             }
@@ -3154,12 +3183,12 @@ public class DatabasePlatform extends DatasourcePlatform {
     }
 
     public void printFieldTypeSize(Writer writer, FieldDefinition field,
-            FieldTypeDefinition fieldType, boolean shouldPrintFieldIdentityClause) throws IOException {
+                                   FieldTypeDefinition fieldType, boolean shouldPrintFieldIdentityClause) throws IOException {
         printFieldTypeSize(writer, field, fieldType);
     }
 
     protected void printFieldTypeSize(Writer writer, FieldDefinition field,
-            FieldTypeDefinition fieldType) throws IOException {
+                                      FieldTypeDefinition fieldType) throws IOException {
         writer.write(fieldType.getName());
         if ((fieldType.isSizeAllowed()) && ((field.getSize() != 0) || (fieldType.isSizeRequired()))) {
             writer.write("(");
@@ -3186,7 +3215,7 @@ public class DatabasePlatform extends DatasourcePlatform {
         return true;
     }
 
-    public void printFieldUnique(Writer writer,  boolean shouldPrintFieldIdentityClause) throws IOException {
+    public void printFieldUnique(Writer writer, boolean shouldPrintFieldIdentityClause) throws IOException {
         printFieldUnique(writer);
     }
 
@@ -3203,27 +3232,30 @@ public class DatabasePlatform extends DatasourcePlatform {
     /**
      * INTERNAL:
      * This method builds an Array using the unwrapped connection within the session
+     *
      * @return Array
      */
     public Array createArray(String elementDataTypeName, Object[] elements, AbstractSession session, Connection connection) throws SQLException {
         //Bug#5200836 need unwrap the connection prior to using.
         java.sql.Connection unwrappedConnection = getConnection(session, connection);
-        return createArray(elementDataTypeName,elements,unwrappedConnection);
+        return createArray(elementDataTypeName, elements, unwrappedConnection);
     }
 
     /**
      * INTERNAL:
      * This method builds a Struct using the unwrapped connection within the session
+     *
      * @return Struct
      */
     public Struct createStruct(String structTypeName, Object[] attributes, AbstractSession session, Connection connection) throws SQLException {
         java.sql.Connection unwrappedConnection = getConnection(session, connection);
-        return createStruct(structTypeName,attributes,unwrappedConnection);
+        return createStruct(structTypeName, attributes, unwrappedConnection);
     }
 
     /**
      * INTERNAL:
      * Platforms that support java.sql.Array may override this method.
+     *
      * @return Array
      */
     public Array createArray(String elementDataTypeName, Object[] elements, Connection connection) throws SQLException {
@@ -3233,6 +3265,7 @@ public class DatabasePlatform extends DatasourcePlatform {
     /**
      * INTERNAL:
      * Platforms that support java.sql.Struct may override this method.
+     *
      * @return Struct
      */
     public Struct createStruct(String structTypeName, Object[] attributes, Connection connection) throws SQLException {
@@ -3244,6 +3277,7 @@ public class DatabasePlatform extends DatasourcePlatform {
      * Indicates whether the passed object is an instance of XDBDocument.
      * To avoid dependency on oracle.xdb the method returns false.
      * Overridden in Oracle9Platform
+     *
      * @return String
      */
     public boolean isXDBDocument(Object obj) {
@@ -3278,31 +3312,34 @@ public class DatabasePlatform extends DatasourcePlatform {
     /**
      * INTERNAL:
      * Platforms that support java.sql.Ref may override this method.
+     *
      * @return Object
      */
-    public Object getRefValue(Ref ref,Connection connection) throws SQLException {
+    public Object getRefValue(Ref ref, Connection connection) throws SQLException {
         return ref.getObject();
     }
+
     /**
      * INTERNAL:
      * This method builds a REF using the unwrapped connection within the session
+     *
      * @return Object
      */
-    public Object getRefValue(Ref ref,AbstractSession executionSession,Connection connection) throws SQLException {
+    public Object getRefValue(Ref ref, AbstractSession executionSession, Connection connection) throws SQLException {
         //Bug#6068155, ensure connection is lived when processing the REF type value.
-        java.sql.Connection unwrappedConnection = getConnection(executionSession,connection);
-        return getRefValue(ref,unwrappedConnection);
+        java.sql.Connection unwrappedConnection = getConnection(executionSession, connection);
+        return getRefValue(ref, unwrappedConnection);
     }
 
 
     /**
      * INTERNAL:
      * Prints return keyword for StoredFunctionDefinition:
-     *    CREATE FUNCTION StoredFunction_In (P_IN BIGINT)
-     *      RETURN  BIGINT
+     * CREATE FUNCTION StoredFunction_In (P_IN BIGINT)
+     * RETURN  BIGINT
      * The method was introduced because MySQL requires "RETURNS" instead:
-     *    CREATE FUNCTION StoredFunction_In (P_IN BIGINT)
-     *      RETURNS  BIGINT
+     * CREATE FUNCTION StoredFunction_In (P_IN BIGINT)
+     * RETURNS  BIGINT
      */
     public void printStoredFunctionReturnKeyWord(Writer writer) throws IOException {
         writer.write("\n\t RETURN ");
@@ -3313,7 +3350,7 @@ public class DatabasePlatform extends DatasourcePlatform {
      * Print the SQL representation of the statement on a stream, storing the fields
      * in the DatabaseCall.
      */
-    public void printSQLSelectStatement(DatabaseCall call, ExpressionSQLPrinter printer, SQLSelectStatement statement){
+    public void printSQLSelectStatement(DatabaseCall call, ExpressionSQLPrinter printer, SQLSelectStatement statement) {
         call.setFields(statement.printSQL(printer));
     }
 
@@ -3321,10 +3358,10 @@ public class DatabasePlatform extends DatasourcePlatform {
      * INTERNAL:
      * Indicates whether locking clause should be printed after where clause by SQLSelectStatement.
      * Example:
-     *   on Oracle platform (method returns true):
-     *     SELECT ADDRESS_ID, ... FROM ADDRESS WHERE (ADDRESS_ID = ?) FOR UPDATE
-     *   on SQLServer platform (method returns false):
-     *     SELECT ADDRESS_ID, ... FROM ADDRESS WITH (UPDLOCK) WHERE (ADDRESS_ID = ?)
+     * on Oracle platform (method returns true):
+     * SELECT ADDRESS_ID, ... FROM ADDRESS WHERE (ADDRESS_ID = ?) FOR UPDATE
+     * on SQLServer platform (method returns false):
+     * SELECT ADDRESS_ID, ... FROM ADDRESS WITH (UPDLOCK) WHERE (ADDRESS_ID = ?)
      */
     public boolean shouldPrintLockingClauseAfterWhereClause() {
         return true;
@@ -3334,10 +3371,10 @@ public class DatabasePlatform extends DatasourcePlatform {
      * INTERNAL:
      * Indicates whether locking clause could be selectively applied only to some tables in a ReadQuery.
      * Example: the following locks the rows in SALARY table, doesn't lock the rows in EMPLOYEE table:
-     *   on Oracle platform (method returns true):
-     *     SELECT t0.EMP_ID..., t1.SALARY FROM EMPLOYEE t0, SALARY t1 WHERE ... FOR UPDATE t1.SALARY
-     *   on SQLServer platform (method returns true):
-     *     SELECT t0.EMP_ID..., t1.SALARY FROM EMPLOYEE t0, SALARY t1 WITH (UPDLOCK) WHERE ...
+     * on Oracle platform (method returns true):
+     * SELECT t0.EMP_ID..., t1.SALARY FROM EMPLOYEE t0, SALARY t1 WHERE ... FOR UPDATE t1.SALARY
+     * on SQLServer platform (method returns true):
+     * SELECT t0.EMP_ID..., t1.SALARY FROM EMPLOYEE t0, SALARY t1 WITH (UPDLOCK) WHERE ...
      */
     public boolean supportsIndividualTableLocking() {
         return true;
@@ -3355,10 +3392,10 @@ public class DatabasePlatform extends DatasourcePlatform {
      * INTERNAL:
      * Indicates whether locking OF clause should print alias for field.
      * Example:
-     *   on Oracle platform (method returns false):
-     *     SELECT ADDRESS_ID, ... FROM ADDRESS T1 WHERE (T1.ADDRESS_ID = ?) FOR UPDATE OF T1.ADDRESS_ID
-     *   on Postgres platform (method returns true):
-     *     SELECT ADDRESS_ID, ... FROM ADDRESS T1 WHERE (T1.ADDRESS_ID = ?) FOR UPDATE OF T1
+     * on Oracle platform (method returns false):
+     * SELECT ADDRESS_ID, ... FROM ADDRESS T1 WHERE (T1.ADDRESS_ID = ?) FOR UPDATE OF T1.ADDRESS_ID
+     * on Postgres platform (method returns true):
+     * SELECT ADDRESS_ID, ... FROM ADDRESS T1 WHERE (T1.ADDRESS_ID = ?) FOR UPDATE OF T1
      */
     public boolean shouldPrintAliasForUpdate() {
         return false;
@@ -3368,12 +3405,9 @@ public class DatabasePlatform extends DatasourcePlatform {
      * INTERNAL:
      * Don't override this method.
      *
-     * @param fullTableName
-     *            qualified name of the table the index is to be created on
-     * @param indexName
-     *            name of the index
-     * @param columnNames
-     *            one or more columns the index is created for
+     * @param fullTableName qualified name of the table the index is to be created on
+     * @param indexName     name of the index
+     * @param columnNames   one or more columns the index is created for
      */
     public String buildCreateIndex(String fullTableName, String indexName, String... columnNames) {
         return buildCreateIndex(fullTableName, indexName, "", false, columnNames);
@@ -3383,16 +3417,11 @@ public class DatabasePlatform extends DatasourcePlatform {
      * INTERNAL:
      * Override this method with the platform's CREATE INDEX statement.
      *
-     * @param fullTableName
-     *            qualified name of the table the index is to be created on
-     * @param indexName
-     *            name of the index
-     * @param qualifier
-     *            qualifier to construct qualified name of index if needed
-     * @param isUnique
-     *            Indicates whether unique index is created
-     * @param columnNames
-     *            one or more columns the index is created for
+     * @param fullTableName qualified name of the table the index is to be created on
+     * @param indexName     name of the index
+     * @param qualifier     qualifier to construct qualified name of index if needed
+     * @param isUnique      Indicates whether unique index is created
+     * @param columnNames   one or more columns the index is created for
      */
     public String buildCreateIndex(String fullTableName, String indexName, String qualifier, boolean isUnique, String... columnNames) {
         StringBuilder queryString = new StringBuilder();
@@ -3417,10 +3446,8 @@ public class DatabasePlatform extends DatasourcePlatform {
      * INTERNAL:
      * Don't override this method.
      *
-     * @param fullTableName
-     *            qualified name of the table the index is to be removed from
-     * @param indexName
-     *            name of the index
+     * @param fullTableName qualified name of the table the index is to be removed from
+     * @param indexName     name of the index
      */
     public String buildDropIndex(String fullTableName, String indexName) {
         return buildDropIndex(fullTableName, indexName, "");
@@ -3430,12 +3457,9 @@ public class DatabasePlatform extends DatasourcePlatform {
      * INTERNAL:
      * Override this method with the platform's DROP INDEX statement.
      *
-     * @param fullTableName
-     *            qualified name of the table the index is to be removed from
-     * @param indexName
-     *            name of the index
-     * @param qualifier
-     *            qualifier to construct qualified name of index if needed
+     * @param fullTableName qualified name of the table the index is to be removed from
+     * @param indexName     name of the index
+     * @param qualifier     qualifier to construct qualified name of index if needed
      */
     public String buildDropIndex(String fullTableName, String indexName, String qualifier) {
         StringBuilder queryString = new StringBuilder();
@@ -3532,7 +3556,7 @@ public class DatabasePlatform extends DatasourcePlatform {
      * Write the string that follows ALTER TABLE to create a sql statement for
      * the platform in order to append a new column to an existing table.
      */
-     public void writeAddColumnClause(Writer writer, AbstractSession session, TableDefinition table, FieldDefinition field) throws IOException {
+    public void writeAddColumnClause(Writer writer, AbstractSession session, TableDefinition table, FieldDefinition field) throws IOException {
         writer.write("ADD ");
         field.appendDBString(writer, session, table);
     }
@@ -3541,6 +3565,7 @@ public class DatabasePlatform extends DatasourcePlatform {
      * INTERNAL:
      * Override this method if the platform supports storing JDBC connection user name during
      * {@link #initializeConnectionData(Connection)}.
+     *
      * @return Always returns {@code false}
      */
     public boolean supportsConnectionUserName() {
@@ -3550,6 +3575,7 @@ public class DatabasePlatform extends DatasourcePlatform {
     /**
      * INTERNAL:
      * Returns user name retrieved from JDBC connection.
+     *
      * @throws UnsupportedOperationException on every single call until overridden.
      */
     public String getConnectionUserName() {
@@ -3557,10 +3583,12 @@ public class DatabasePlatform extends DatasourcePlatform {
     }
 
     // Value of shouldCheckResultTableExistsQuery must be false.
+
     /**
      * INTERNAL:
      * Returns query to check whether given table exists.
      * Query execution throws an exception when no such table exists.
+     *
      * @param table database table meta-data
      * @return query to check whether given table exists
      */
@@ -3576,13 +3604,14 @@ public class DatabasePlatform extends DatasourcePlatform {
      * Executes and evaluates query to check whether given table exists.
      * Returned value is always {@code true}, because an exception is thrown
      * when given table does not exists.
-     * @param session current database session
-     * @param table database table meta-data
+     *
+     * @param session         current database session
+     * @param table           database table meta-data
      * @param suppressLogging whether to suppress logging during query execution
      * @return value of {@code true} if given table exists or {@code false} otherwise
      */
     public boolean checkTableExists(final DatabaseSessionImpl session,
-            final TableDefinition table, final boolean suppressLogging) {
+                                    final TableDefinition table, final boolean suppressLogging) {
         try {
             session.setLoggingOff(suppressLogging);
             session.executeQuery(getTableExistsQuery(table));
