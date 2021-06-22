@@ -37,6 +37,7 @@ public class TransientCompatibleAnnotations {
         add("javax.persistence.PersistenceContexts");
         add("javax.persistence.Access");
         add("javax.persistence.Transient");
+        add("javax.persistence.Temporal");
     }});
 
     /**
