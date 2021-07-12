@@ -57,14 +57,20 @@ public class ConversionManager extends CoreConversionManager implements Serializ
     protected boolean shouldUseClassLoaderFromCurrentThread = false;
     protected static ConversionManager defaultManager;
 
-    /** Allows the setting of a global default if no instance-level loader is set. */
+    /**
+     * Allows the setting of a global default if no instance-level loader is set.
+     */
     private static ClassLoader defaultLoader;
     protected ClassLoader loader;
 
-    /** Store the list of Classes that can be converted to from the key. */
+    /**
+     * Store the list of Classes that can be converted to from the key.
+     */
     protected Hashtable dataTypesConvertedFromAClass;
 
-    /** Store the list of Classes that can be converted from to the key. */
+    /**
+     * Store the list of Classes that can be converted from to the key.
+     */
     protected Hashtable dataTypesConvertedToAClass;
 
     public ConversionManager() {
@@ -86,17 +92,18 @@ public class ConversionManager extends CoreConversionManager implements Serializ
     /**
      * Convert the object to the appropriate type by invoking the appropriate
      * ConversionManager method
-     * @param object - the object that must be converted
+     *
+     * @param object    - the object that must be converted
      * @param javaClass - the class that the object must be converted to
-     * @exception - ConversionException, all exceptions will be thrown as this type.
      * @return - the newly converted object
+     * @throws - ConversionException, all exceptions will be thrown as this type.
      */
     @Override
     public Object convertObject(Object sourceObject, Class javaClass) throws ConversionException {
         if (sourceObject == null) {
             // Check for default null conversion.
             // i.e. allow for null to be defaulted to "", or 0 etc.
-            if (javaClass != null ) {
+            if (javaClass != null) {
                 return getDefaultNullValue(javaClass);
             } else {
                 return null;
@@ -150,7 +157,7 @@ public class ConversionManager extends CoreConversionManager implements Serializ
                 return convertObjectToBigDecimal(sourceObject);
             } else if (javaClass == ClassConstants.NUMBER) {
                 return convertObjectToNumber(sourceObject);
-            } else if ((javaClass == ClassConstants.BOOLEAN) || (javaClass == ClassConstants.PBOOLEAN  && !(sourceObject instanceof Boolean))) {
+            } else if ((javaClass == ClassConstants.BOOLEAN) || (javaClass == ClassConstants.PBOOLEAN && !(sourceObject instanceof Boolean))) {
                 return convertObjectToBoolean(sourceObject);
             } else if (javaClass == ClassConstants.APBYTE) {
                 return convertObjectToByteArray(sourceObject);
@@ -162,7 +169,7 @@ public class ConversionManager extends CoreConversionManager implements Serializ
                 return convertObjectToCharacterArray(sourceObject);
             } else if ((sourceObject.getClass() == ClassConstants.STRING) && (javaClass == ClassConstants.CLASS)) {
                 return convertObjectToClass(sourceObject);
-            } else if(javaClass == ClassConstants.URL_Class) {
+            } else if (javaClass == ClassConstants.URL_Class) {
                 return convertObjectToUrl(sourceObject);
             }
         } catch (ConversionException ce) {
@@ -172,14 +179,14 @@ public class ConversionManager extends CoreConversionManager implements Serializ
         }
 
         // Check if object is instance of the real class for the primitive class.
-        if ((((javaClass == ClassConstants.PBOOLEAN) && (sourceObject instanceof Boolean)  ) ||
-            ((javaClass == ClassConstants.PLONG) && (sourceObject instanceof Long) ) ||
-            ((javaClass == ClassConstants.PINT) && (sourceObject instanceof Integer)  ) ||
-            ((javaClass == ClassConstants.PFLOAT) && (sourceObject instanceof Float)) ||
-            ((javaClass == ClassConstants.PDOUBLE) &&  (sourceObject instanceof Double) ) ||
-            ((javaClass == ClassConstants.PBYTE) &&  (sourceObject instanceof Byte)) ||
-            ((javaClass == ClassConstants.PCHAR) &&  (sourceObject instanceof Character)) ||
-            ((javaClass == ClassConstants.PSHORT) &&  (sourceObject instanceof Short)))) {
+        if ((((javaClass == ClassConstants.PBOOLEAN) && (sourceObject instanceof Boolean)) ||
+                ((javaClass == ClassConstants.PLONG) && (sourceObject instanceof Long)) ||
+                ((javaClass == ClassConstants.PINT) && (sourceObject instanceof Integer)) ||
+                ((javaClass == ClassConstants.PFLOAT) && (sourceObject instanceof Float)) ||
+                ((javaClass == ClassConstants.PDOUBLE) && (sourceObject instanceof Double)) ||
+                ((javaClass == ClassConstants.PBYTE) && (sourceObject instanceof Byte)) ||
+                ((javaClass == ClassConstants.PCHAR) && (sourceObject instanceof Character)) ||
+                ((javaClass == ClassConstants.PSHORT) && (sourceObject instanceof Short)))) {
             return sourceObject;
         }
 
@@ -196,24 +203,25 @@ public class ConversionManager extends CoreConversionManager implements Serializ
 
     /**
      * Build a valid instance of BigDecimal from the given sourceObject
-     *    @param sourceObject    Valid instance of String, BigInteger, any Number
+     *
+     * @param sourceObject Valid instance of String, BigInteger, any Number
      */
     protected BigDecimal convertObjectToBigDecimal(Object sourceObject) throws ConversionException {
         BigDecimal bigDecimal = null;
 
         try {
             if (sourceObject instanceof String) {
-                bigDecimal = new BigDecimal((String)sourceObject);
+                bigDecimal = new BigDecimal((String) sourceObject);
             } else if (sourceObject instanceof BigInteger) {
-                bigDecimal = new BigDecimal((BigInteger)sourceObject);
+                bigDecimal = new BigDecimal((BigInteger) sourceObject);
             } else if (sourceObject instanceof Number) {
                 // Doubles do not maintain scale, because of this it is
                 // impossible to distinguish between 1 and 1.0.  In order to
                 // maintain backwards compatibility both 1 and 1.0 will be
                 // treated as BigDecimal(1).
                 String numberString = String.valueOf(sourceObject);
-                if(numberString.endsWith(".0") || numberString.contains(".0E+")) {
-                    bigDecimal = new BigDecimal(((Number)sourceObject).doubleValue());
+                if (numberString.endsWith(".0") || numberString.contains(".0E+")) {
+                    bigDecimal = new BigDecimal(((Number) sourceObject).doubleValue());
                 } else {
                     bigDecimal = new BigDecimal(numberString);
                 }
@@ -228,22 +236,23 @@ public class ConversionManager extends CoreConversionManager implements Serializ
 
     /**
      * Build a valid instance of BigInteger from the provided sourceObject.
-     *    @param sourceObject    Valid instance of String, BigDecimal, or any Number
+     *
+     * @param sourceObject Valid instance of String, BigDecimal, or any Number
      */
     protected BigInteger convertObjectToBigInteger(Object sourceObject) throws ConversionException {
         BigInteger bigInteger = null;
 
         try {
             if (sourceObject instanceof BigInteger) {
-                bigInteger = (BigInteger)sourceObject;
+                bigInteger = (BigInteger) sourceObject;
             } else if (sourceObject instanceof String) {
-                bigInteger = new BigInteger((String)sourceObject);
+                bigInteger = new BigInteger((String) sourceObject);
             } else if (sourceObject instanceof BigDecimal) {
-                bigInteger = ((BigDecimal)sourceObject).toBigInteger();
+                bigInteger = ((BigDecimal) sourceObject).toBigInteger();
             } else if (sourceObject instanceof Number) {
-                bigInteger = new BigInteger(String.valueOf(((Number)sourceObject).longValue()));
+                bigInteger = new BigInteger(String.valueOf(((Number) sourceObject).longValue()));
             } else if (sourceObject instanceof Byte[]) {
-                Byte[] objectBytes = (Byte[])sourceObject;
+                Byte[] objectBytes = (Byte[]) sourceObject;
                 byte[] bytes = new byte[objectBytes.length];
                 for (int index = 0; index < objectBytes.length; index++) {
                     bytes[index] = objectBytes[index].byteValue();
@@ -262,23 +271,23 @@ public class ConversionManager extends CoreConversionManager implements Serializ
     }
 
     /**
-     *    Build a valid instance of Boolean from the source object.
-     *    't', 'T', "true", "TRUE", 1,'1'             -> Boolean(true)
-     *    'f', 'F', "false", "FALSE", 0 ,'0'        -> Boolean(false)
+     * Build a valid instance of Boolean from the source object.
+     * 't', 'T', "true", "TRUE", 1,'1'             -> Boolean(true)
+     * 'f', 'F', "false", "FALSE", 0 ,'0'        -> Boolean(false)
      */
     protected Boolean convertObjectToBoolean(Object sourceObject) {
         if (sourceObject instanceof Character) {
-            switch (Character.toLowerCase(((Character)sourceObject).charValue())) {
-            case '1':
-            case 't':
-                return Boolean.TRUE;
-            case '0':
-            case 'f':
-                return Boolean.FALSE;
+            switch (Character.toLowerCase(((Character) sourceObject).charValue())) {
+                case '1':
+                case 't':
+                    return Boolean.TRUE;
+                case '0':
+                case 'f':
+                    return Boolean.FALSE;
             }
         }
         if (sourceObject instanceof String) {
-            String stringValue = ((String)sourceObject).toLowerCase();
+            String stringValue = ((String) sourceObject).toLowerCase();
             if (stringValue.equals("t") || stringValue.equals("true") || stringValue.equals("1")) {
                 return Boolean.TRUE;
             } else if (stringValue.equals("f") || stringValue.equals("false") || stringValue.equals("0")) {
@@ -286,7 +295,7 @@ public class ConversionManager extends CoreConversionManager implements Serializ
             }
         }
         if (sourceObject instanceof Number) {
-            int intValue = ((Number)sourceObject).intValue();
+            int intValue = ((Number) sourceObject).intValue();
             if (intValue != 0) {
                 return Boolean.TRUE;
             } else if (intValue == 0) {
@@ -298,19 +307,19 @@ public class ConversionManager extends CoreConversionManager implements Serializ
 
     /**
      * Build a valid instance of Byte from the provided sourceObject
-     * @param sourceObject    Valid instance of String or any Number
-     * @caught exception        The Byte(String) constructor throws a
-     *     NumberFormatException if the String does not contain a
-     *        parsable byte.
      *
+     * @param sourceObject Valid instance of String or any Number
+     * @caught exception        The Byte(String) constructor throws a
+     * NumberFormatException if the String does not contain a
+     * parsable byte.
      */
     protected Byte convertObjectToByte(Object sourceObject) throws ConversionException {
         try {
             if (sourceObject instanceof String) {
-                return Byte.valueOf((String)sourceObject);
+                return Byte.valueOf((String) sourceObject);
             }
             if (sourceObject instanceof Number) {
-                return Byte.valueOf(((Number)sourceObject).byteValue());
+                return Byte.valueOf(((Number) sourceObject).byteValue());
             }
         } catch (NumberFormatException exception) {
             throw ConversionException.couldNotBeConverted(sourceObject, ClassConstants.BYTE, exception);
@@ -320,18 +329,18 @@ public class ConversionManager extends CoreConversionManager implements Serializ
     }
 
     /**
-      * Build a valid instance of a byte array from the given object.
-      * This method does hex conversion of the string values.  Some
-      * databases have problems with storing blobs unless the blob
-      * is stored as a hex string.
-      */
+     * Build a valid instance of a byte array from the given object.
+     * This method does hex conversion of the string values.  Some
+     * databases have problems with storing blobs unless the blob
+     * is stored as a hex string.
+     */
     protected byte[] convertObjectToByteArray(Object sourceObject) throws ConversionException {
         //Bug#3128838 Used when converted to Byte[]
         if (sourceObject instanceof byte[]) {
-            return (byte[])sourceObject;
+            return (byte[]) sourceObject;
             //Related to Bug#3128838.  Add support to convert to Byte[]
         } else if (sourceObject instanceof Byte[]) {
-            Byte[] objectBytes = (Byte[])sourceObject;
+            Byte[] objectBytes = (Byte[]) sourceObject;
             byte[] bytes = new byte[objectBytes.length];
             for (int index = 0; index < objectBytes.length; index++) {
                 Byte value = objectBytes[index];
@@ -341,16 +350,16 @@ public class ConversionManager extends CoreConversionManager implements Serializ
             }
             return bytes;
         } else if (sourceObject instanceof String) {
-            return Helper.buildBytesFromHexString((String)sourceObject);
+            return Helper.buildBytesFromHexString((String) sourceObject);
         } else if (sourceObject instanceof Blob) {
-            Blob blob = (Blob)sourceObject;
+            Blob blob = (Blob) sourceObject;
             try {
-                return blob.getBytes(1L, (int)blob.length());
+                return blob.getBytes(1L, (int) blob.length());
             } catch (SQLException exception) {
                 throw DatabaseException.sqlException(exception);
             }
         } else if (sourceObject instanceof InputStream) {
-            InputStream inputStream = (InputStream)sourceObject;
+            InputStream inputStream = (InputStream) sourceObject;
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             try {
                 int tempInt = inputStream.read();
@@ -363,18 +372,18 @@ public class ConversionManager extends CoreConversionManager implements Serializ
                 throw ConversionException.couldNotBeConverted(sourceObject, ClassConstants.APBYTE, ioException);
             }
         } else if (sourceObject instanceof BigInteger) {
-            return ((BigInteger)sourceObject).toByteArray();
+            return ((BigInteger) sourceObject).toByteArray();
         }
 
         throw ConversionException.couldNotBeConverted(sourceObject, ClassConstants.APBYTE);
     }
 
     /**
-      * Build a valid instance of a Byte array from the given object.
-      * This method does hex conversion of the string values.  Some
-      * databases have problems with storing blobs unless the blob
-      * is stored as a hex string.
-      */
+     * Build a valid instance of a Byte array from the given object.
+     * This method does hex conversion of the string values.  Some
+     * databases have problems with storing blobs unless the blob
+     * is stored as a hex string.
+     */
     protected Byte[] convertObjectToByteObjectArray(Object sourceObject) throws ConversionException {
         byte[] bytes = convertObjectToByteArray(sourceObject);
         Byte[] objectBytes = new Byte[bytes.length];
@@ -386,41 +395,43 @@ public class ConversionManager extends CoreConversionManager implements Serializ
 
     /**
      * Build a valid instance of java.util.Calendar from the given source object.
-     *    @param sourceObject    Valid instance of java.util.Date, String, java.sql.Timestamp, or Long
+     *
+     * @param sourceObject Valid instance of java.util.Date, String, java.sql.Timestamp, or Long
      */
     protected Calendar convertObjectToCalendar(Object sourceObject) throws ConversionException {
         if (sourceObject instanceof Calendar) {
-            return (Calendar)sourceObject;
+            return (Calendar) sourceObject;
         } else if (sourceObject instanceof java.util.Date) {
             // PERF: Avoid double conversion for date subclasses.
-            return Helper.calendarFromUtilDate((java.util.Date)sourceObject);
+            return Helper.calendarFromUtilDate((java.util.Date) sourceObject);
         }
         return Helper.calendarFromUtilDate(convertObjectToUtilDate(sourceObject));
     }
 
     /**
      * Build a valid instance of Character from the provided sourceObject.
-     *    @param sourceObject    Valid instance of String or any Number
+     *
+     * @param sourceObject Valid instance of String or any Number
      */
     protected Character convertObjectToChar(Object sourceObject) throws ConversionException {
         if (sourceObject instanceof String) {
-            if (((String)sourceObject).length() < 1) {
+            if (((String) sourceObject).length() < 1) {
                 // ELBug336192 - Return default null value of char instead of returning null.
-                return (Character)getDefaultNullValue(ClassConstants.PCHAR);
+                return (Character) getDefaultNullValue(ClassConstants.PCHAR);
             }
-            return Character.valueOf(((String)sourceObject).charAt(0));
+            return Character.valueOf(((String) sourceObject).charAt(0));
         }
 
         if (sourceObject instanceof Number) {
-            return Character.valueOf((char)((Number)sourceObject).byteValue());
+            return Character.valueOf((char) ((Number) sourceObject).byteValue());
         }
 
         throw ConversionException.couldNotBeConverted(sourceObject, ClassConstants.CHAR);
     }
 
     /**
-      * Build a valid instance of a Character array from the given object.
-      */
+     * Build a valid instance of a Character array from the given object.
+     */
     protected Character[] convertObjectToCharacterArray(Object sourceObject) throws ConversionException {
         String stringValue = convertObjectToString(sourceObject);
         Character[] chars = new Character[stringValue.length()];
@@ -431,11 +442,11 @@ public class ConversionManager extends CoreConversionManager implements Serializ
     }
 
     /**
-      * Build a valid instance of a char array from the given object.
-      */
+     * Build a valid instance of a char array from the given object.
+     */
     protected char[] convertObjectToCharArray(Object sourceObject) throws ConversionException {
         if (sourceObject instanceof Character[]) {
-            Character[] objectChars = (Character[])sourceObject;
+            Character[] objectChars = (Character[]) sourceObject;
             char[] chars = new char[objectChars.length];
             for (int index = 0; index < objectChars.length; index++) {
                 chars[index] = objectChars[index].charValue();
@@ -452,7 +463,8 @@ public class ConversionManager extends CoreConversionManager implements Serializ
 
     /**
      * Build a valid Class from the string that is passed in
-     *    @param sourceObject    Valid instance of String
+     *
+     * @param sourceObject Valid instance of String
      */
     protected Class convertObjectToClass(Object sourceObject) throws ConversionException {
         Class theClass = null;
@@ -461,9 +473,9 @@ public class ConversionManager extends CoreConversionManager implements Serializ
         }
         try {
             // bug # 2799318
-            theClass = getPrimitiveClass((String)sourceObject);
+            theClass = getPrimitiveClass((String) sourceObject);
             if (theClass == null) {
-                theClass = Class.forName((String)sourceObject, true, getLoader());
+                theClass = Class.forName((String) sourceObject, true, getLoader());
             }
         } catch (Exception exception) {
             throw ConversionException.couldNotBeConvertedToClass(sourceObject, ClassConstants.CLASS, exception);
@@ -472,24 +484,25 @@ public class ConversionManager extends CoreConversionManager implements Serializ
     }
 
     /**
-      * Convert the object to an instance of java.sql.Date.
-      *    @param    sourceObject Object of type java.sql.Timestamp, java.util.Date, String or Long
-      */
+     * Convert the object to an instance of java.sql.Date.
+     *
+     * @param sourceObject Object of type java.sql.Timestamp, java.util.Date, String or Long
+     */
     protected java.sql.Date convertObjectToDate(Object sourceObject) throws ConversionException {
         java.sql.Date date = null;
 
         if (sourceObject instanceof java.sql.Date) {
-            date = (java.sql.Date)sourceObject;//Helper date is not caught on class check.
+            date = (java.sql.Date) sourceObject;//Helper date is not caught on class check.
         } else if (sourceObject instanceof java.sql.Timestamp) {
-            date = Helper.dateFromTimestamp((java.sql.Timestamp)sourceObject);
+            date = Helper.dateFromTimestamp((java.sql.Timestamp) sourceObject);
         } else if (sourceObject.getClass() == ClassConstants.UTILDATE) {
-            date = Helper.sqlDateFromUtilDate((java.util.Date)sourceObject);
+            date = Helper.sqlDateFromUtilDate((java.util.Date) sourceObject);
         } else if (sourceObject instanceof Calendar) {
-            return Helper.dateFromCalendar((Calendar)sourceObject);
+            return Helper.dateFromCalendar((Calendar) sourceObject);
         } else if (sourceObject instanceof String) {
-            date = Helper.dateFromString((String)sourceObject);
+            date = Helper.dateFromString((String) sourceObject);
         } else if (sourceObject instanceof Long) {
-            date = Helper.dateFromLong((Long)sourceObject);
+            date = Helper.dateFromLong((Long) sourceObject);
         } else {
             throw ConversionException.couldNotBeConverted(sourceObject, ClassConstants.SQLDATE);
         }
@@ -497,19 +510,20 @@ public class ConversionManager extends CoreConversionManager implements Serializ
     }
 
     /**
-      * Convert the object to an instance of Double.
-      * @param                    sourceObject Object of type String or Number.
-      * @caught exception    The Double(String) constructor throws a
-      *         NumberFormatException if the String does not contain a
-      *        parsable double.
-      */
+     * Convert the object to an instance of Double.
+     *
+     * @param sourceObject Object of type String or Number.
+     * @caught exception    The Double(String) constructor throws a
+     * NumberFormatException if the String does not contain a
+     * parsable double.
+     */
     protected Double convertObjectToDouble(Object sourceObject) throws ConversionException {
         try {
             if (sourceObject instanceof String) {
-                return Double.valueOf((String)sourceObject);
+                return Double.valueOf((String) sourceObject);
             }
             if (sourceObject instanceof Number) {
-                return Double.valueOf(((Number)sourceObject).doubleValue());
+                return Double.valueOf(((Number) sourceObject).doubleValue());
             }
         } catch (NumberFormatException exception) {
             throw ConversionException.couldNotBeConverted(sourceObject, ClassConstants.DOUBLE, exception);
@@ -519,17 +533,18 @@ public class ConversionManager extends CoreConversionManager implements Serializ
 
     /**
      * Build a valid Float instance from a String or another Number instance.
+     *
      * @caught exception    The Float(String) constructor throws a
-     *         NumberFormatException if the String does not contain a
-     *        parsable Float.
+     * NumberFormatException if the String does not contain a
+     * parsable Float.
      */
     protected Float convertObjectToFloat(Object sourceObject) throws ConversionException {
         try {
             if (sourceObject instanceof String) {
-                return Float.valueOf((String)sourceObject);
+                return Float.valueOf((String) sourceObject);
             }
             if (sourceObject instanceof Number) {
-                return Float.valueOf(((Number)sourceObject).floatValue());
+                return Float.valueOf(((Number) sourceObject).floatValue());
             }
         } catch (NumberFormatException exception) {
             throw ConversionException.couldNotBeConverted(sourceObject, ClassConstants.FLOAT, exception);
@@ -540,22 +555,23 @@ public class ConversionManager extends CoreConversionManager implements Serializ
 
     /**
      * Build a valid Integer instance from a String or another Number instance.
+     *
      * @caught exception    The Integer(String) constructor throws a
-     *         NumberFormatException if the String does not contain a
-     *        parsable integer.
+     * NumberFormatException if the String does not contain a
+     * parsable integer.
      */
     protected Integer convertObjectToInteger(Object sourceObject) throws ConversionException {
         try {
             if (sourceObject instanceof String) {
-                return Integer.valueOf((String)sourceObject);
+                return Integer.valueOf((String) sourceObject);
             }
 
             if (sourceObject instanceof Number) {
-                return Integer.valueOf(((Number)sourceObject).intValue());
+                return Integer.valueOf(((Number) sourceObject).intValue());
             }
 
             if (sourceObject instanceof Boolean) {
-                if (((Boolean)sourceObject).booleanValue()) {
+                if (((Boolean) sourceObject).booleanValue()) {
                     return Integer.valueOf(1);
                 } else {
                     return Integer.valueOf(0);
@@ -569,29 +585,29 @@ public class ConversionManager extends CoreConversionManager implements Serializ
     }
 
     /**
-      * Build a valid Long instance from a String or another Number instance.
-      * @caught exception    The Long(String) constructor throws a
-      *         NumberFormatException if the String does not contain a
-      *        parsable long.
-      *
-      */
+     * Build a valid Long instance from a String or another Number instance.
+     *
+     * @caught exception    The Long(String) constructor throws a
+     * NumberFormatException if the String does not contain a
+     * parsable long.
+     */
     protected Long convertObjectToLong(Object sourceObject) throws ConversionException {
         try {
             if (sourceObject instanceof String) {
-                return Long.valueOf((String)sourceObject);
+                return Long.valueOf((String) sourceObject);
             }
             if (sourceObject instanceof Number) {
-                return Long.valueOf(((Number)sourceObject).longValue());
+                return Long.valueOf(((Number) sourceObject).longValue());
             }
             if (sourceObject instanceof java.util.Date) {
-                return Long.valueOf(((java.util.Date)sourceObject).getTime());
+                return Long.valueOf(((java.util.Date) sourceObject).getTime());
             }
             if (sourceObject instanceof java.util.Calendar) {
-                return Long.valueOf(((java.util.Calendar)sourceObject).getTimeInMillis());
+                return Long.valueOf(((java.util.Calendar) sourceObject).getTimeInMillis());
             }
 
             if (sourceObject instanceof Boolean) {
-                if (((Boolean)sourceObject).booleanValue()) {
+                if (((Boolean) sourceObject).booleanValue()) {
                     return Long.valueOf(1);
                 } else {
                     return Long.valueOf(0);
@@ -609,22 +625,23 @@ public class ConversionManager extends CoreConversionManager implements Serializ
      * Build a valid BigDecimal instance from a String or another
      * Number instance.  BigDecimal is the most general type so is
      * must be returned when an object is converted to a number.
+     *
      * @caught exception    The BigDecimal(String) constructor throws a
-     *     NumberFormatException if the String does not contain a
-     *    parsable BigDecimal.
+     * NumberFormatException if the String does not contain a
+     * parsable BigDecimal.
      */
     protected BigDecimal convertObjectToNumber(Object sourceObject) throws ConversionException {
         try {
             if (sourceObject instanceof String) {
-                return new BigDecimal((String)sourceObject);
+                return new BigDecimal((String) sourceObject);
             }
 
             if (sourceObject instanceof Number) {
-                return new BigDecimal(((Number)sourceObject).doubleValue());
+                return new BigDecimal(((Number) sourceObject).doubleValue());
             }
 
             if (sourceObject instanceof Boolean) {
-                if (((Boolean)sourceObject).booleanValue()) {
+                if (((Boolean) sourceObject).booleanValue()) {
                     return BigDecimal.valueOf(1);
                 } else {
                     return BigDecimal.valueOf(0);
@@ -640,25 +657,26 @@ public class ConversionManager extends CoreConversionManager implements Serializ
     /**
      * INTERNAL:
      * Build a valid Short instance from a String or another Number instance.
+     *
      * @caught exception    The Short(String) constructor throws a
-     *     NumberFormatException if the String does not contain a
-     *    parsable short.
+     * NumberFormatException if the String does not contain a
+     * parsable short.
      */
     protected Short convertObjectToShort(Object sourceObject) throws ConversionException {
         try {
             if (sourceObject instanceof String) {
-                return Short.valueOf((String)sourceObject);
+                return Short.valueOf((String) sourceObject);
             }
 
             if (sourceObject instanceof Number) {
-                return Short.valueOf(((Number)sourceObject).shortValue());
+                return Short.valueOf(((Number) sourceObject).shortValue());
             }
 
             if (sourceObject instanceof Boolean) {
-                if (((Boolean)sourceObject).booleanValue()) {
-                    return Short.valueOf((short)1);
+                if (((Boolean) sourceObject).booleanValue()) {
+                    return Short.valueOf((short) 1);
                 } else {
-                    return Short.valueOf((short)0);
+                    return Short.valueOf((short) 0);
                 }
             }
         } catch (Exception exception) {
@@ -683,32 +701,32 @@ public class ConversionManager extends CoreConversionManager implements Serializ
         } else if (sourceObjectClass == ClassConstants.BOOLEAN) {
             return sourceObject.toString();
         } else if (sourceObjectClass == ClassConstants.UTILDATE) {
-            return Helper.printTimestamp(Helper.timestampFromDate((java.util.Date)sourceObject));
+            return Helper.printTimestamp(Helper.timestampFromDate((java.util.Date) sourceObject));
         } else if (sourceObject instanceof java.util.Calendar) {
-            return Helper.printCalendar((Calendar)sourceObject);
+            return Helper.printCalendar((Calendar) sourceObject);
         } else if (sourceObjectClass == ClassConstants.TIMESTAMP) {
-            return Helper.printTimestamp((java.sql.Timestamp)sourceObject);
+            return Helper.printTimestamp((java.sql.Timestamp) sourceObject);
         } else if (sourceObject instanceof java.sql.Date) {
-            return Helper.printDate((java.sql.Date)sourceObject);
+            return Helper.printDate((java.sql.Date) sourceObject);
         } else if (sourceObject instanceof java.sql.Time) {
-            return Helper.printTime((java.sql.Time)sourceObject);
+            return Helper.printTime((java.sql.Time) sourceObject);
         } else if (sourceObjectClass == ClassConstants.APBYTE) {
-            return Helper.buildHexStringFromBytes((byte[])sourceObject);
+            return Helper.buildHexStringFromBytes((byte[]) sourceObject);
             //Bug#3854296 Added support to convert Byte[], char[] and Character[] to String correctly
         } else if (sourceObjectClass == ClassConstants.ABYTE) {
             return Helper.buildHexStringFromBytes(convertObjectToByteArray(sourceObject));
         } else if (sourceObjectClass == ClassConstants.APCHAR) {
-            return new String((char[])sourceObject);
+            return new String((char[]) sourceObject);
         } else if (sourceObjectClass == ClassConstants.ACHAR) {
             return new String(convertObjectToCharArray(sourceObject));
         } else if (sourceObject instanceof Class) {
-            return ((Class)sourceObject).getName();
+            return ((Class) sourceObject).getName();
         } else if (sourceObjectClass == ClassConstants.CHAR) {
             return sourceObject.toString();
         } else if (sourceObject instanceof Clob) {
-            Clob clob = (Clob)sourceObject;
+            Clob clob = (Clob) sourceObject;
             try {
-                return clob.getSubString(1L, (int)clob.length());
+                return clob.getSubString(1L, (int) clob.length());
             } catch (SQLException exception) {
                 throw DatabaseException.sqlException(exception);
             }
@@ -720,25 +738,26 @@ public class ConversionManager extends CoreConversionManager implements Serializ
     /**
      * INTERNAL:
      * Build a valid instance of java.sql.Time from the given source object.
-     * @param    sourceObject    Valid instance of java.sql.Time, String, java.util.Date, java.sql.Timestamp, or Long
+     *
+     * @param sourceObject Valid instance of java.sql.Time, String, java.util.Date, java.sql.Timestamp, or Long
      */
     protected java.sql.Time convertObjectToTime(Object sourceObject) throws ConversionException {
         java.sql.Time time = null;
 
         if (sourceObject instanceof java.sql.Time) {
-            return (java.sql.Time)sourceObject;//Helper timestamp is not caught on class check.
+            return (java.sql.Time) sourceObject;//Helper timestamp is not caught on class check.
         }
 
         if (sourceObject instanceof String) {
-            time = Helper.timeFromString((String)sourceObject);
+            time = Helper.timeFromString((String) sourceObject);
         } else if (sourceObject.getClass() == ClassConstants.UTILDATE) {
-            time = Helper.timeFromDate((java.util.Date)sourceObject);
+            time = Helper.timeFromDate((java.util.Date) sourceObject);
         } else if (sourceObject instanceof java.sql.Timestamp) {
-            time = Helper.timeFromTimestamp((java.sql.Timestamp)sourceObject);
+            time = Helper.timeFromTimestamp((java.sql.Timestamp) sourceObject);
         } else if (sourceObject instanceof Calendar) {
-            return Helper.timeFromCalendar((Calendar)sourceObject);
+            return Helper.timeFromCalendar((Calendar) sourceObject);
         } else if (sourceObject instanceof Long) {
-            time = Helper.timeFromLong((Long)sourceObject);
+            time = Helper.timeFromLong((Long) sourceObject);
         } else if (sourceObject.getClass() == ClassConstants.TIME_LTIME) {
             time = java.sql.Time.valueOf((java.time.LocalTime) sourceObject);
         } else if (sourceObject.getClass() == ClassConstants.TIME_OTIME) {
@@ -752,23 +771,24 @@ public class ConversionManager extends CoreConversionManager implements Serializ
     /**
      * INTERNAL:
      * Build a valid instance of java.sql.Timestamp from the given source object.
-     * @param sourceObject    Valid object of class java.sql.Timestamp, String, java.util.Date, or Long
+     *
+     * @param sourceObject Valid object of class java.sql.Timestamp, String, java.util.Date, or Long
      */
     protected java.sql.Timestamp convertObjectToTimestamp(Object sourceObject) throws ConversionException {
         java.sql.Timestamp timestamp = null;
 
         if (sourceObject instanceof java.sql.Timestamp) {
-            return (java.sql.Timestamp)sourceObject;// Helper timestamp is not caught on class check.
+            return (java.sql.Timestamp) sourceObject;// Helper timestamp is not caught on class check.
         }
 
         if (sourceObject instanceof String) {
-            timestamp = Helper.timestampFromString((String)sourceObject);
+            timestamp = Helper.timestampFromString((String) sourceObject);
         } else if (sourceObject instanceof java.util.Date) {// This handles all date and subclasses, sql.Date, sql.Time conversions.
-            timestamp = Helper.timestampFromDate((java.util.Date)sourceObject);
+            timestamp = Helper.timestampFromDate((java.util.Date) sourceObject);
         } else if (sourceObject instanceof Calendar) {
-            return Helper.timestampFromCalendar((Calendar)sourceObject);
+            return Helper.timestampFromCalendar((Calendar) sourceObject);
         } else if (sourceObject instanceof Long) {
-            timestamp = Helper.timestampFromLong((Long)sourceObject);
+            timestamp = Helper.timestampFromLong((Long) sourceObject);
         } else {
             throw ConversionException.couldNotBeConverted(sourceObject, ClassConstants.TIMESTAMP);
         }
@@ -779,9 +799,8 @@ public class ConversionManager extends CoreConversionManager implements Serializ
      * INTERNAL: Build a valid instance of java.time.LocalDate from the given
      * source object.
      *
-     * @param sourceObject
-     *            Valid object of class java.sql.Timestamp, String,
-     *            java.util.Date, or Long
+     * @param sourceObject Valid object of class java.sql.Timestamp, String,
+     *                     java.util.Date, or Long
      */
     protected java.time.LocalDate convertObjectToLocalDate(Object sourceObject) throws ConversionException {
         java.time.LocalDate localDate = null;
@@ -816,9 +835,8 @@ public class ConversionManager extends CoreConversionManager implements Serializ
      * INTERNAL: Build a valid instance of java.time.LocalTime from the given
      * source object.
      *
-     * @param sourceObject
-     *            Valid object of class java.sql.Timestamp, String,
-     *            java.util.Date, or Long
+     * @param sourceObject Valid object of class java.sql.Timestamp, String,
+     *                     java.util.Date, or Long
      */
     protected java.time.LocalTime convertObjectToLocalTime(Object sourceObject) throws ConversionException {
         java.time.LocalTime localTime = null;
@@ -857,9 +875,8 @@ public class ConversionManager extends CoreConversionManager implements Serializ
      * INTERNAL: Build a valid instance of java.time.LocalDateTime from the given
      * source object.
      *
-     * @param sourceObject
-     *            Valid object of class java.sql.Timestamp, String,
-     *            java.util.Date, or Long
+     * @param sourceObject Valid object of class java.sql.Timestamp, String,
+     *                     java.util.Date, or Long
      */
     protected java.time.LocalDateTime convertObjectToLocalDateTime(Object sourceObject) throws ConversionException {
         java.time.LocalDateTime localDateTime = null;
@@ -877,14 +894,14 @@ public class ConversionManager extends CoreConversionManager implements Serializ
             Calendar cal = Helper.allocateCalendar();
             cal.setTime((java.util.Date) sourceObject);
             localDateTime = java.time.LocalDateTime.of(
-                    cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH),
-                    cal.get(Calendar.HOUR), cal.get(Calendar.MINUTE), cal.get(Calendar.SECOND), cal.get(Calendar.MILLISECOND));
+                    cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH),
+                    cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE), cal.get(Calendar.SECOND), cal.get(Calendar.MILLISECOND));
             Helper.releaseCalendar(cal);
         } else if (sourceObject instanceof Calendar) {
             Calendar cal = (Calendar) sourceObject;
             localDateTime = java.time.LocalDateTime.of(
-                    cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH),
-                    cal.get(Calendar.HOUR), cal.get(Calendar.MINUTE), cal.get(Calendar.SECOND), cal.get(Calendar.MILLISECOND));
+                    cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH),
+                    cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE), cal.get(Calendar.SECOND), cal.get(Calendar.MILLISECOND));
         } else if (sourceObject instanceof Long) {
             localDateTime = java.time.LocalDateTime.ofInstant(
                     java.time.Instant.ofEpochSecond((Long) sourceObject), java.time.ZoneId.systemDefault());
@@ -899,9 +916,8 @@ public class ConversionManager extends CoreConversionManager implements Serializ
      * INTERNAL: Build a valid instance of java.time.OffsetDateTime from the given
      * source object.
      *
-     * @param sourceObject
-     *            Valid object of class java.sql.Timestamp, String,
-     *            java.util.Date, or Long
+     * @param sourceObject Valid object of class java.sql.Timestamp, String,
+     *                     java.util.Date, or Long
      */
     protected java.time.OffsetDateTime convertObjectToOffsetDateTime(Object sourceObject) throws ConversionException {
         java.time.OffsetDateTime offsetDateTime = null;
@@ -918,15 +934,15 @@ public class ConversionManager extends CoreConversionManager implements Serializ
             Calendar cal = Helper.allocateCalendar();
             cal.setTime((java.util.Date) sourceObject);
             offsetDateTime = java.time.OffsetDateTime.of(
-                    cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH),
+                    cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH),
                     cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE), cal.get(Calendar.SECOND), cal.get(Calendar.MILLISECOND) * 1000000,
                     java.time.ZoneOffset.ofTotalSeconds((cal.get(Calendar.ZONE_OFFSET) + cal.get(Calendar.DST_OFFSET)) / 1000));
             Helper.releaseCalendar(cal);
         } else if (sourceObject instanceof Calendar) {
             Calendar cal = (Calendar) sourceObject;
             offsetDateTime = java.time.OffsetDateTime.of(
-                    cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH),
-                    cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE), cal.get(Calendar.SECOND), cal.get(Calendar.MILLISECOND  * 1000000),
+                    cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH),
+                    cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE), cal.get(Calendar.SECOND), cal.get(Calendar.MILLISECOND * 1000000),
                     java.time.ZoneOffset.ofTotalSeconds((cal.get(Calendar.ZONE_OFFSET) + cal.get(Calendar.DST_OFFSET)) / 1000));
         } else if (sourceObject instanceof Long) {
             offsetDateTime = java.time.OffsetDateTime.ofInstant(
@@ -942,9 +958,8 @@ public class ConversionManager extends CoreConversionManager implements Serializ
      * INTERNAL: Build a valid instance of java.time.OffsetTime from the given
      * source object.
      *
-     * @param sourceObject
-     *            Valid object of class java.sql.Timestamp, String,
-     *            java.util.Date, or Long
+     * @param sourceObject Valid object of class java.sql.Timestamp, String,
+     *                     java.util.Date, or Long
      */
     protected java.time.OffsetTime convertObjectToOffsetTime(Object sourceObject) throws ConversionException {
         java.time.OffsetTime offsetTime = null;
@@ -986,15 +1001,16 @@ public class ConversionManager extends CoreConversionManager implements Serializ
     /**
      * INTERNAL:
      * Build a valid instance of java.net.URL from the given source object.
-     * @param sourceObject    Valid instance of java.net.URL, or String
+     *
+     * @param sourceObject Valid instance of java.net.URL, or String
      */
     protected URL convertObjectToUrl(Object sourceObject) throws ConversionException {
-        if(sourceObject.getClass() == ClassConstants.URL_Class) {
+        if (sourceObject.getClass() == ClassConstants.URL_Class) {
             return (URL) sourceObject;
         } else if (sourceObject.getClass() == ClassConstants.STRING) {
             try {
                 return new URL((String) sourceObject);
-            } catch(Exception e) {
+            } catch (Exception e) {
                 throw ConversionException.couldNotBeConverted(sourceObject, ClassConstants.URL_Class, e);
             }
         } else {
@@ -1005,25 +1021,26 @@ public class ConversionManager extends CoreConversionManager implements Serializ
     /**
      * INTERNAL:
      * Build a valid instance of java.util.Date from the given source object.
-     * @param sourceObject    Valid instance of java.util.Date, String, java.sql.Timestamp, or Long
+     *
+     * @param sourceObject Valid instance of java.util.Date, String, java.sql.Timestamp, or Long
      */
     protected java.util.Date convertObjectToUtilDate(Object sourceObject) throws ConversionException {
         java.util.Date date = null;
 
         if (sourceObject.getClass() == java.util.Date.class) {
-            date = (java.util.Date)sourceObject;//used when converting util.Date to Calendar
+            date = (java.util.Date) sourceObject;//used when converting util.Date to Calendar
         } else if (sourceObject instanceof java.sql.Date) {
-            date = Helper.utilDateFromSQLDate((java.sql.Date)sourceObject);
+            date = Helper.utilDateFromSQLDate((java.sql.Date) sourceObject);
         } else if (sourceObject instanceof java.sql.Time) {
-            date = Helper.utilDateFromTime((java.sql.Time)sourceObject);
+            date = Helper.utilDateFromTime((java.sql.Time) sourceObject);
         } else if (sourceObject instanceof String) {
-            date = Helper.utilDateFromTimestamp(Helper.timestampFromString((String)sourceObject));
+            date = Helper.utilDateFromTimestamp(Helper.timestampFromString((String) sourceObject));
         } else if (sourceObject instanceof java.sql.Timestamp) {
-            date = Helper.utilDateFromTimestamp((java.sql.Timestamp)sourceObject);
+            date = Helper.utilDateFromTimestamp((java.sql.Timestamp) sourceObject);
         } else if (sourceObject instanceof Calendar) {
-            return ((Calendar)sourceObject).getTime();
+            return ((Calendar) sourceObject).getTime();
         } else if (sourceObject instanceof Long) {
-            date = Helper.utilDateFromLong((Long)sourceObject);
+            date = Helper.utilDateFromLong((Long) sourceObject);
         } else if (sourceObject instanceof java.util.Date) {
             date = new java.util.Date(((java.util.Date) sourceObject).getTime());
         } else {
@@ -1079,7 +1096,7 @@ public class ConversionManager extends CoreConversionManager implements Serializ
     @Override
     public ClassLoader getLoader() {
         if (shouldUseClassLoaderFromCurrentThread()) {
-            if (PrivilegedAccessHelper.shouldUsePrivilegedAccess()){
+            if (PrivilegedAccessHelper.shouldUsePrivilegedAccess()) {
                 try {
                     return AccessController.doPrivileged(new PrivilegedGetContextClassLoader(Thread.currentThread()));
                 } catch (PrivilegedActionException exception) {
@@ -1093,10 +1110,10 @@ public class ConversionManager extends CoreConversionManager implements Serializ
             if (defaultLoader == null) {
                 //CR 2621
                 ClassLoader loader = null;
-                if (PrivilegedAccessHelper.shouldUsePrivilegedAccess()){
-                    try{
+                if (PrivilegedAccessHelper.shouldUsePrivilegedAccess()) {
+                    try {
                         loader = AccessController.doPrivileged(new PrivilegedGetClassLoaderForClass(ClassConstants.ConversionManager_Class));
-                    } catch (PrivilegedActionException exc){
+                    } catch (PrivilegedActionException exc) {
                         // will not be thrown
                     }
                 } else {
@@ -1113,7 +1130,7 @@ public class ConversionManager extends CoreConversionManager implements Serializ
     /**
      * INTERNAL
      */
-    public boolean hasDefaultNullValues(){
+    public boolean hasDefaultNullValues() {
         return this.defaultNullValues != null;
     }
 
@@ -1125,7 +1142,7 @@ public class ConversionManager extends CoreConversionManager implements Serializ
      * see classes on the same classpath as the eclipselink.jar.
      */
     public static Class loadClass(String className) {
-        return (Class)getDefaultManager().convertObject(className, ClassConstants.CLASS);
+        return (Class) getDefaultManager().convertObject(className, ClassConstants.CLASS);
     }
 
     /**
@@ -1163,13 +1180,13 @@ public class ConversionManager extends CoreConversionManager implements Serializ
             if (javaClass == ClassConstants.PBOOLEAN) {
                 return ClassConstants.BOOLEAN;
             }
-            } else if (javaClass == ClassConstants.APBYTE) {
-                return ClassConstants.APBYTE;
-            } else if (javaClass == ClassConstants.APCHAR) {
-                return ClassConstants.APCHAR;
-            } else {
-                return javaClass;
-            }
+        } else if (javaClass == ClassConstants.APBYTE) {
+            return ClassConstants.APBYTE;
+        } else if (javaClass == ClassConstants.APCHAR) {
+            return ClassConstants.APCHAR;
+        } else {
+            return javaClass;
+        }
 
         return javaClass;
     }
@@ -1216,7 +1233,7 @@ public class ConversionManager extends CoreConversionManager implements Serializ
      * Primitive null values should be set to the wrapper class.
      */
     public void setDefaultNullValue(Class theClass, Object theValue) {
-        if (this.defaultNullValues == null){
+        if (this.defaultNullValues == null) {
             this.defaultNullValues = new HashMap(5);
         }
         getDefaultNullValues().put(theClass, theValue);
@@ -1233,6 +1250,7 @@ public class ConversionManager extends CoreConversionManager implements Serializ
 
     /**
      * INTERNAL:
+     *
      * @parameter java.lang.ClassLoader
      */
     public void setLoader(ClassLoader classLoader) {
@@ -1243,6 +1261,7 @@ public class ConversionManager extends CoreConversionManager implements Serializ
     /**
      * INTERNAL:
      * Set the default class loader to use if no instance-level loader is set
+     *
      * @parameter java.lang.ClassLoader
      */
     public static void setDefaultLoader(ClassLoader classLoader) {
@@ -1252,6 +1271,7 @@ public class ConversionManager extends CoreConversionManager implements Serializ
     /**
      * INTERNAL:
      * Get the default class loader to use if no instance-level loader is set
+     *
      * @return java.lang.ClassLoader
      */
     public static ClassLoader getDefaultLoader() {
@@ -1271,7 +1291,7 @@ public class ConversionManager extends CoreConversionManager implements Serializ
 
     /**
      * ADVANCED:
-     *  This flag should be set if the current thread classLoader should be used.
+     * This flag should be set if the current thread classLoader should be used.
      * This is the case in certain Application Servers were the class loader must be
      * retrieved from the current Thread.  If classNotFoundExceptions are being thrown then set
      * this flag.  In certain cases it will resolve the problem
@@ -1283,6 +1303,7 @@ public class ConversionManager extends CoreConversionManager implements Serializ
     /**
      * PUBLIC:
      * Return the list of Classes that can be converted to from the passed in javaClass.
+     *
      * @param javaClass - the class that is converted from
      * @return - a vector of classes
      */
@@ -1290,12 +1311,13 @@ public class ConversionManager extends CoreConversionManager implements Serializ
         if (dataTypesConvertedFromAClass.isEmpty()) {
             buildDataTypesConvertedFromAClass();
         }
-        return (Vector)dataTypesConvertedFromAClass.get(javaClass);
+        return (Vector) dataTypesConvertedFromAClass.get(javaClass);
     }
 
     /**
      * PUBLIC:
      * Return the list of Classes that can be converted from to the passed in javaClass.
+     *
      * @param javaClass - the class that is converted to
      * @return - a vector of classes
      */
@@ -1303,7 +1325,7 @@ public class ConversionManager extends CoreConversionManager implements Serializ
         if (dataTypesConvertedToAClass.isEmpty()) {
             buildDataTypesConvertedToAClass();
         }
-        return (Vector)dataTypesConvertedToAClass.get(javaClass);
+        return (Vector) dataTypesConvertedToAClass.get(javaClass);
     }
 
     protected Vector buildNumberVec() {
