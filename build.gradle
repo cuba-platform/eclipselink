@@ -1,5 +1,5 @@
-def artifactVersion = '2.7.7-1-jmix'
-def originalVersion = '2.7.7'
+def artifactVersion = '2.7.9-1-jmix'
+def originalVersion = '2.7.9'
 if (rootProject.hasProperty('buildVersion')) {
     artifactVersion = rootProject['buildVersion']
 }
@@ -53,13 +53,28 @@ dependencies {
     }
 }
 
+task setupEclipseSDK(type:Exec){
+    commandLine'wget', '--directory-prefix=plugins/eclipse_sdk',
+            '-nc','https://download.eclipse.org/eclipse/downloads/drops4/R-4.10-201812060815/eclipse-SDK-4.10-linux-gtk-x86_64.tar.gz'
+    doLast{
+        copy {
+            from tarTree(resources.gzip('plugins/eclipse_sdk/eclipse-SDK-4.10-linux-gtk-x86_64.tar.gz'))
+            into 'plugins/eclipse_sdk'
+        }
+    }
+ }
+
+def currentPath=projectDir.absolutePath.startsWith("file:/")?
+        projectDir.absolutePath.substring("file:/".length())
+        :projectDir.absolutePath
+
 ant.properties['junit.lib'] = configurations.junitAnt.asPath
 ant.properties['jdbc.driver.jar'] = configurations.jdbcDriver.asPath
 ant.properties['db.driver'] = 'com.mysql.jdbc.Driver'
 ant.properties['db.url'] = 'jdbc:mysql://localhost/eclipselink?useSSL=false'
 ant.properties['db.user'] = 'root'
 ant.properties['db.pwd'] = 'root'
-
+ant.properties['eclipse.install.dir'] = "$currentPath/plugins/eclipse_sdk/eclipse"
 ant.taskdef(name: 'junit', classname: 'org.apache.tools.ant.taskdefs.optional.junit.JUnitTask',
         classpath: configurations.junitTasksAnt.asPath)
 ant.taskdef(name: 'junitreport', classname: 'org.apache.tools.ant.taskdefs.optional.junit.XMLResultAggregator',
@@ -79,7 +94,7 @@ publishing {
             pom.withXml {
                 asNode().appendNode('packaging', 'jar')
                 def dependencies = asNode().appendNode('dependencies')
-                addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.asm', originalVersion)
+                addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.asm', '9.1.0')
             }
         }
         jpa(MavenPublication) {
@@ -90,7 +105,7 @@ publishing {
                 asNode().appendNode('packaging', 'jar')
                 def dependencies = asNode().appendNode('dependencies')
                 addDependency(dependencies, 'org.eclipse.persistence', 'jakarta.persistence', '2.2.3')
-                addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.asm', originalVersion)
+                addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.asm', '9.1.0')
                 addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.antlr', originalVersion)
                 addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.jpa.jpql', originalVersion)
                 addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.core', artifactVersion)

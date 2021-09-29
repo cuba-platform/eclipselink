@@ -62,7 +62,7 @@
         <repository>
             <id>Local_CompDeps</id>
             <layout>p2</layout>
-            <url>file:/${basedir}/../../buildsystem/compdeps/org.eclipse.persistence.compdeps.p2repo/target/repository</url>
+            <url>file:${basedir}/../../buildsystem/compdeps/org.eclipse.persistence.compdeps.p2repo/target/repository</url>
         </repository>
         <repository>
             <id>Oracle-local-p2</id>
