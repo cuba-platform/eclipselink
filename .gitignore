@@ -65,3 +65,4 @@ plugins/sun-misc*.jar
 plugins/weld*.jar
 plugins/jboss*.jar
 plugins/org.eclipse.persistence.asm*.jar
+plugins/eclipse_sdk
