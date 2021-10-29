@@ -275,6 +275,12 @@ public class ParameterExpression extends BaseExpression {
                         value = session.getProperty(this.field.getName());
                     }
 
+                    //CUBA begin
+                    if (value == null) {
+                        value = CubaUtil.getProperty(this.field.getName());
+                    }
+                    //CUBA end
+
                     if (value == null) {
                         throw QueryException.missingContextPropertyForPropertyParameterExpression(query, this.field.getName());
                     }
