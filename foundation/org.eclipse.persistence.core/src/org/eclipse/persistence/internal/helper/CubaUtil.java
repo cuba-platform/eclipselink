@@ -8,6 +8,10 @@ public class CubaUtil {
     private static ThreadLocal<Boolean> disableSoftDeleteTL = new ThreadLocal<>();
     private static ThreadLocal<Boolean> disableOriginalSoftDeleteTL = new ThreadLocal<>();
     private static ThreadLocal<Boolean> disableJPQLParseCacheTL = new ThreadLocal<>();
+
+    /**
+     * Stores important additional properties such as "tenantId"
+     */
     private static ThreadLocal<Map<String, Object>> propertiesTL = new ThreadLocal<>();
 
     public static boolean setSoftDeletion(boolean softDeletion) {
@@ -48,6 +52,20 @@ public class CubaUtil {
     public static Object getProperty(String key) {
         checkProperties();
         return propertiesTL.get().get(key);
+    }
+
+    public static Map<String,Object> getProperties() {
+        checkProperties();
+        return propertiesTL.get();
+    }
+
+    public static void setProperties(Map<String,Object> properties){
+        checkProperties();
+        propertiesTL.set(properties);
+    }
+
+    public static boolean hasProperties(){
+        return !getProperties().isEmpty();
     }
 
     public static boolean containsProperty(String key) {
