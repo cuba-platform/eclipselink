@@ -158,7 +158,8 @@ public class ExpressionQueryMechanism extends StatementQueryMechanism {
             Expression additionalJoin;
             if (shouldUseAdditionalJoinExpression) {
                 // cuba begin
-                if (getSession().getPlatform().shouldPrintInheritanceTableJoinsInFromClause()) {
+                if (getSession().getPlatform().shouldPrintInheritanceTableJoinsInFromClause() &&
+                        queryManager.getMultipleTableJoinExpression() != null) {
                     additionalJoin = queryManager.getAdditionalJoinExpressionWithoutMultiTableJoins();
                 } else {
                     additionalJoin = queryManager.getAdditionalJoinExpression();
