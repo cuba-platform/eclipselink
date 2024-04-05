@@ -642,6 +642,14 @@ public abstract class ForeignReferenceMapping extends DatabaseMapping {
                     remainingParentRows = new ArrayList<>(parentRows.subList(offset + index, startIndex));
                 }
                 originalPolicy.setDataResults(this, remainingParentRows);
+
+                //cuba begin
+                if (foreignKeys.isEmpty()) {//see JFCS-43, eclipse-ee4j/eclipselink#1635
+                    foreignKeys.add(sourceKey);
+                    foreignKeyValues.add(((CacheId)sourceKey).getPrimaryKey()[0]);
+                }
+                //cuba end
+
                 translationRow = translationRow.clone();
                 translationRow.put(QUERY_BATCH_PARAMETER, foreignKeyValues);
                 // Register each id as null, in case it has no relationship.
