@@ -1863,7 +1863,8 @@ public class SQLSelectStatement extends SQLStatement {
         }
 
         //CUBA begin
-        if (hintPosition == DatabasePlatform.HintPosition.AFTER_QUERY && hint != null) {
+        String hint = getHintString();
+        if (printer.getPlatform().getHintPosition() == DatabasePlatform.HintPosition.AFTER_QUERY && hint != null) {
             printer.printString(" ");
             printer.printString(hint);
             printer.printString(" ");

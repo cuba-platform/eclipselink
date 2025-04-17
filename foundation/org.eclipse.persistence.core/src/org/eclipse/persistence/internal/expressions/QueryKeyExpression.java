@@ -852,7 +852,10 @@ public class QueryKeyExpression extends ObjectExpression {
                     }
                 }
                 //CUBA begin
-                if (!shouldUseOuterJoin() && !getSession().getPlatform().shouldPrintInnerJoinInWhereClause()) {
+                ReadQuery upperQuery = normalizer.getStatement().getParentStatement() != null
+                        ? normalizer.getStatement().getParentStatement().getQuery()
+                        : normalizer.getStatement().getQuery();
+                if (!shouldUseOuterJoin() && !getSession().getPlatform().shouldPrintInnerJoinInWhereClause(upperQuery)) {
                     Expression additionalExpressionCriteria = additionalExpressionCriteria();
                     if (additionalExpressionCriteria != null) {
                         if (getOnClause() != null) {

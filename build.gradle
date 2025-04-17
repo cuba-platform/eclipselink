@@ -1,5 +1,5 @@
-def artifactVersion = '2.7.9-1-jmix'
-def originalVersion = '2.7.9'
+def artifactVersion = '2.7.15-1-jmix'
+def originalVersion = '2.7.15'
 if (rootProject.hasProperty('buildVersion')) {
     artifactVersion = rootProject['buildVersion']
 }
@@ -27,10 +27,11 @@ repositories {
             password repositoryPassword
         }
         url "${repositoryUrl}/groups/work"
+        allowInsecureProtocol = true
     }
 }
 
-apply plugin: 'maven'
+apply plugin: 'base'
 apply plugin: 'maven-publish'
 
 configurations {
@@ -94,7 +95,7 @@ publishing {
             pom.withXml {
                 asNode().appendNode('packaging', 'jar')
                 def dependencies = asNode().appendNode('dependencies')
-                addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.asm', '9.1.0')
+                addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.asm', '9.7.0')
             }
         }
         jpa(MavenPublication) {
@@ -105,7 +106,7 @@ publishing {
                 asNode().appendNode('packaging', 'jar')
                 def dependencies = asNode().appendNode('dependencies')
                 addDependency(dependencies, 'org.eclipse.persistence', 'jakarta.persistence', '2.2.3')
-                addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.asm', '9.1.0')
+                addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.asm', '9.7.0')
                 addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.antlr', originalVersion)
                 addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.jpa.jpql', originalVersion)
                 addDependency(dependencies, 'org.eclipse.persistence', 'org.eclipse.persistence.core', artifactVersion)
@@ -120,6 +121,7 @@ publishing {
                 username uploadUser
                 password uploadPassword
             }
+            allowInsecureProtocol = true
         }
     }
 }
